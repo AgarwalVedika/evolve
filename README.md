@@ -59,7 +59,10 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-Click **Load example** to explore a pre-filled workspace for an AI email assistant (invented data), including a guardrail breach waiting in Health. Or start in **Steer** with your own product.
+Load one of two pre-filled example workspaces (invented data), or start in **Steer** with your own product:
+
+- **Grocery delivery (Uber case).** My 2023 Uber New Verticals catalog-intelligence case study, revisited as a self-evolving loop. North star: search-to-cart rate. Signals include “basmati” searches that miss rice listed as “long grain”, Dutch merchants’ SKUs with no images, missing pack sizes, Dutch and English mixed in one catalog, and King’s Day tompouce stock-outs. Memory already holds one shipped bet (auto-filling images and sizes) and one rolled-back explore bet (meal plans), and Health shows three guardrails breaking the week a new tagging model reached Dutch merchants: one root cause for the loop to diagnose and heal.
+- **AI email assistant.** North star: drafts sent with light edits. Includes a draft-regret breach after a model rollout.
 
 To turn on AI, paste an Anthropic API key into the banner. The key stays in your browser’s local storage and is sent only to `api.anthropic.com`. Without a key, every step still works by hand.
 
@@ -80,6 +83,7 @@ The same app runs as a Claude artifact, where the workspace is stored server-sid
 ```
 index.html                       the Evolve app (self-contained)
 demo/index.html                  scripted concept demo on simulated data
+examples/grocery-delivery-workspace.json  invented example: grocery delivery (Uber 2023 case, revisited)
 examples/example-workspace.json  invented example workspace (AI email assistant)
 examples/example-signals.csv     sample CSV for the Listen import
 docs/PITCH.md                    the one-page pitch: problem, customer, moat, roadmap

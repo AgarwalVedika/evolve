@@ -1,0 +1,59 @@
+{
+  "_note": "Invented example data inspired by the author's 2023 Uber New Verticals catalog-intelligence case study. Not real Uber data.",
+  "workspace": {
+    "example": true,
+    "exampleName": "Grocery delivery (Uber 2023 case, revisited)",
+    "product": "Example, inspired by my 2023 Uber New Verticals case study (invented data): grocery, convenience, pharmacy and alcohol delivery inside a food-delivery app. Thousands of merchants send catalogs of millions of products through APIs, feeds and uploads. An ML suite curates the catalog (tagging, categories, image recognition, rich product information, data-quality checks) and powers search, browse, recommendations, inventory and pricing tools. Consumers search and order, merchants manage stock and prices, couriers pick and deliver.",
+    "goal": "Grow grocery order conversion in the Netherlands and the UK this half, while keeping catalog accuracy and delivery quality high.",
+    "northStar": {
+      "name": "Search-to-cart rate",
+      "unit": "% of search sessions",
+      "why": "Conversion in grocery starts with finding the right item. Search sessions that end in an add-to-cart are the earliest, most catalog-sensitive signal; orders and repeat baskets follow."
+    },
+    "drivers": [
+      {"name": "Catalog richness", "definition": "Share of live SKUs with an image, a category, size or weight, and key attributes such as dietary tags"},
+      {"name": "Search success", "definition": "Share of searches with a click on a top-10 result"},
+      {"name": "Availability accuracy", "definition": "Share of items shown in stock that are actually picked, not substituted or refunded"},
+      {"name": "Repeat basket", "definition": "Share of grocery customers who order again within 14 days"}
+    ],
+    "guardrails": [
+      {"name": "Item not-found rate", "op": "<=", "value": 6, "unit": "%", "kind": "hard"},
+      {"name": "Order defect rate", "op": "<=", "value": 3, "unit": "%", "kind": "hard"},
+      {"name": "Catalog accuracy (audited)", "op": ">=", "value": 95, "unit": "%", "kind": "hard"},
+      {"name": "Courier pick time per item", "op": "<=", "value": 45, "unit": "s", "kind": "soft"}
+    ],
+    "approvedAt": "2026-11-02T18:00:00Z"
+  },
+  "signals": [
+    {"id": "g1", "text": "Searches for “basmati” return no rice from three of five nearby stores. Their listings say “Rice long grain” and never mention basmati.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T09:00:00Z"},
+    {"id": "g2", "text": "28% of SKUs from newly onboarded Dutch merchants have no image. Their click-through is less than half that of items with images.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T09:01:00Z"},
+    {"id": "g3", "text": "I searched for uttapam batter and Indian snacks and got nothing. Another app has them from the same shop.", "source": "Survey", "kind": "user", "createdAt": "2026-11-02T09:02:00Z"},
+    {"id": "g4", "text": "Ordered semi-skimmed milk 1L and got 2L. The listing had no size at all.", "source": "Support", "kind": "user", "createdAt": "2026-11-02T09:03:00Z"},
+    {"id": "g5", "text": "Half the catalog is in Dutch and half in English, side by side. I just want to switch the language quickly.", "source": "Interview", "kind": "user", "createdAt": "2026-11-02T09:04:00Z"},
+    {"id": "g6", "text": "No reviews and no description. The listing tells me to check the supermarket's own website.", "source": "Review", "kind": "user", "createdAt": "2026-11-02T09:05:00Z"},
+    {"id": "g7", "text": "The item showed in stock, then got substituted at pick. Third time this week.", "source": "Support", "kind": "user", "createdAt": "2026-11-02T09:06:00Z"},
+    {"id": "g8", "text": "Courier: no handling note on frozen items, so they go in the same bag as warm bread and arrive thawed.", "source": "Interview", "kind": "user", "createdAt": "2026-11-02T09:07:00Z"},
+    {"id": "g9", "text": "I'd order every week if it remembered my usual basket and let me reorder in one tap.", "source": "Survey", "kind": "user", "createdAt": "2026-11-02T09:08:00Z"},
+    {"id": "g10", "text": "What I miss most is comparing the same product across stores. I end up checking three apps.", "source": "Survey", "kind": "user", "createdAt": "2026-11-02T09:09:00Z"},
+    {"id": "g11", "text": "Searches for “tompouce” rise about sixfold in the week before King's Day, and 40% of results are out of stock.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T09:10:00Z"},
+    {"id": "g12", "text": "A rival delivery app launched recipe-to-cart: pick a meal plan and the ingredients land in the basket.", "source": "Competitor", "kind": "market", "createdAt": "2026-11-02T09:11:00Z"},
+    {"id": "g13", "text": "A large online retailer now shows reviews from other countries when a product has no local reviews.", "source": "Competitor", "kind": "market", "createdAt": "2026-11-02T09:12:00Z"}
+  ],
+  "problems": [],
+  "bets": [
+    {"id": "gb1", "title": "Auto-fill missing images and sizes", "fix": "Match merchant SKUs to manufacturer data by barcode and fill in missing images, sizes and weights before items go live.", "driver": "Catalog richness", "kind": "Growth", "impact": 3.5, "conf": 0.7, "weeks": 2, "metric": "Search-to-cart rate", "why": "Missing images and sizes are the most common catalog gap in user complaints and telemetry.", "status": "shipped", "createdAt": "2026-10-01T10:00:00Z", "startedAt": "2026-10-06T10:00:00Z", "decidedAt": "2026-10-20T10:00:00Z", "test": {"nc": 24000, "sc": 4440, "nv": 24000, "sv": 4896}},
+    {"id": "gb2", "title": "Personalised meal plans on the home screen", "fix": "Show a weekly meal plan with one-tap ingredients at the top of the grocery home screen.", "driver": "Repeat basket", "kind": "Explore", "impact": 5, "conf": 0.35, "weeks": 4, "metric": "Repeat basket within 14 days", "why": "A bold bet on the lazy-planner persona.", "status": "rolled back", "createdAt": "2026-09-15T10:00:00Z", "startedAt": "2026-09-22T10:00:00Z", "decidedAt": "2026-10-13T10:00:00Z", "test": {"nc": 9000, "sc": 2610, "nv": 9000, "sv": 2628}}
+  ],
+  "metrics": [
+    {"id": "gm1", "date": "2026-10-05", "values": {"Search-to-cart rate": 18.4, "Item not-found rate": 5.1, "Order defect rate": 2.4, "Catalog accuracy (audited)": 95.8, "Courier pick time per item": 41}, "note": "", "createdAt": "2026-10-05T09:00:00Z"},
+    {"id": "gm2", "date": "2026-10-12", "values": {"Search-to-cart rate": 18.9, "Item not-found rate": 5.0, "Order defect rate": 2.3, "Catalog accuracy (audited)": 96.1, "Courier pick time per item": 40}, "note": "", "createdAt": "2026-10-12T09:00:00Z"},
+    {"id": "gm3", "date": "2026-10-19", "values": {"Search-to-cart rate": 19.6, "Item not-found rate": 4.9, "Order defect rate": 2.2, "Catalog accuracy (audited)": 96.4, "Courier pick time per item": 40}, "note": "Image and size auto-fill launched to all markets", "createdAt": "2026-10-19T09:00:00Z"},
+    {"id": "gm4", "date": "2026-10-26", "values": {"Search-to-cart rate": 19.1, "Item not-found rate": 7.4, "Order defect rate": 3.4, "Catalog accuracy (audited)": 93.2, "Courier pick time per item": 43}, "note": "Tagging and categorisation model v2 rolled out to Dutch merchants on Tuesday", "createdAt": "2026-10-26T09:00:00Z"}
+  ],
+  "memory": [
+    {"id": "gmem1", "text": "From the 2023 case study: user research ranked saving time, comparing products, cheap prices, easy search and accurate stock above personalised meal plans and recipe ideas. Start with catalog quality and search before advanced recommendations.", "kind": "note", "createdAt": "2026-09-01T10:00:00Z"},
+    {"id": "gmem2", "text": "Rolled back “Personalised meal plans on the home screen” (Explore): +0.20 pts on repeat basket, 62% chance better than control. Be more sceptical of explore bets like this without strong user evidence.", "kind": "rollback", "createdAt": "2026-10-13T10:00:00Z"},
+    {"id": "gmem3", "text": "Shipped “Auto-fill missing images and sizes” (Growth, Catalog richness): +1.90 pts on search-to-cart, 100% chance better than control. Similar growth bets on catalog richness deserve more confidence.", "kind": "ship", "createdAt": "2026-10-20T10:00:00Z"},
+    {"id": "gmem4", "text": "Goals approved. North star: Search-to-cart rate. Guardrails: Item not-found rate, Order defect rate, Catalog accuracy (audited), Courier pick time per item.", "kind": "steer", "createdAt": "2026-11-02T18:00:00Z"}
+  ]
+}

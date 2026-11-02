@@ -199,11 +199,27 @@ function directSample(key){
   call.json=async(input,opts)=>{const r=await call(String(input)+"\n\nReply with only the JSON value, no other text.",opts);if(r.truncated)throw {code:"invalid_json",text:r.text};return parseLoose(r.text)};
   call.direct=true;return call;
 }
-async function loadExample(){
-  try{const r=await fetch("examples/example-workspace.json");if(!r.ok)throw 0;const d=await r.json();
-    S.ws=d.workspace||null;COLLS.forEach(c=>{S[c]={};(d[c]||[]).forEach(x=>{const id=x.id;const o=Object.assign({},x);delete o.id;S[c][id]=o})});
-    persistLocal();render();flash("Example workspace loaded.");
-  }catch(e){flash("Couldn’t load the example. Serve the folder over http (see README) rather than opening the file directly.")}
+const EXAMPLES=[{id:"grocery",file:"examples/grocery-delivery-workspace.json",label:"Grocery delivery (Uber case)"},{id:"email",file:"examples/example-workspace.json",label:"AI email assistant"}];
+let pendingSwitch=null;
+async function loadExample(id){
+  const ex=EXAMPLES.find(e=>e.id===id);if(!ex)return;
+  const hasData=!!(S.ws&&S.ws.product)||COLLS.some(c=>Object.keys(S[c]).length);
+  if(hasData&&pendingSwitch!==id){pendingSwitch=id;flash("This replaces everything in the current workspace. Click “"+ex.label+"” again to confirm.");return}
+  pendingSwitch=null;
+  let d;
+  try{const r=await fetch(ex.file);if(!r.ok)throw 0;d=await r.json()}
+  catch(e){flash("Couldn’t load the example. If you opened the file directly, serve the folder over http instead (see README).");return}
+  if(db){
+    try{
+      for(const c of COLLS)for(const docId of Object.keys(S[c]))await db.collection(c).doc(docId).delete();
+      for(const c of COLLS)for(const x of (d[c]||[])){const o=Object.assign({},x);delete o.id;await db.collection(c).doc(String(x.id)).set(o)}
+      await db.doc("workspace/main").set(d.workspace||{});
+    }catch(e){flash("Loading the example stopped part-way. Try again.");return}
+  } else {
+    S.ws=d.workspace||null;COLLS.forEach(c=>{S[c]={};(d[c]||[]).forEach(x=>{const o=Object.assign({},x);delete o.id;S[c][String(x.id)]=o})});
+    persistLocal();
+  }
+  S.proposal=null;S.diag={};S.answer="";S.tab="steer";render();flash(ex.label+" example loaded.");
 }
 function remember(text,kind){return put("memory",uid(),{text,kind:kind||"note",createdAt:new Date().toISOString()})}
 
@@ -409,13 +425,14 @@ function renderBanner(){
   if(!S.dbOn&&S.ready&&!S.standalone)parts.push(`<div class="banner">Storage isn’t available in this view, so changes last only until you close the page.</div>`);
   if(S.standalone&&S.ready&&!sample)parts.push(`<div class="banner"><span>AI is off. Paste an Anthropic API key to turn it on. It stays in this browser and is sent only to api.anthropic.com.</span><span class="spacer"></span><label for="apiKey" style="display:flex;gap:8px;align-items:center;font-weight:400"><span class="note">API key</span><input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-…" style="width:220px"></label><button class="btn sm" id="saveKey" type="button">Turn on AI</button></div>`);
   if(S.standalone&&S.ready&&sample)parts.push(`<div class="banner" style="background:var(--sunk)"><span class="note">AI runs on your Anthropic API key, stored in this browser.</span><span class="spacer"></span><button class="btn sm quiet" id="forgetKey" type="button">Forget key</button></div>`);
-  if(S.standalone&&S.ready&&!S.ws&&!Object.keys(S.signals).length)parts.push(`<div class="banner"><span>New workspace. Start in Steer with your own product, or load the example to look around.</span><span class="spacer"></span><button class="btn sm ghost" id="loadEx" type="button">Load example</button></div>`);
-  if(S.ws&&S.ws.example)parts.push(`<div class="banner"><span>You’re looking at an <b>example workspace</b> (an AI email assistant, invented data). Replace it with your own product when ready.</span><span class="spacer"></span><button class="btn sm warn" id="clearEx" type="button">Clear example data</button></div>`);
+  if(S.ready&&!(S.ws&&S.ws.product)&&!Object.keys(S.signals).length)parts.push(`<div class="banner"><span>New workspace. Start in Steer with your own product, or load an example to look around.</span><span class="spacer"></span>${EXAMPLES.map(e=>`<button class="btn sm ghost" data-ex="${e.id}" type="button">${esc(e.label)}</button>`).join("")}</div>`);
+  if(S.ws&&S.ws.example){const cur=S.ws.exampleName||"AI email assistant";const others=EXAMPLES.filter(e=>!cur.startsWith(e.label.split(" (")[0]));
+    parts.push(`<div class="banner"><span>Example workspace: <b>${esc(cur)}</b>. Invented data. Replace it with your own product when ready.</span><span class="spacer"></span>${others.map(e=>`<button class="btn sm ghost" data-ex="${e.id}" type="button">Switch to ${esc(e.label)}</button>`).join("")}<button class="btn sm warn" id="clearEx" type="button">Clear example data</button></div>`)}
   $("banner").innerHTML=parts.join("");
   const ce=$("clearEx");if(ce)ce.onclick=clearAll;
   const sk=$("saveKey");if(sk)sk.onclick=()=>{const k=($("apiKey").value||"").trim();if(!k)return;lsSet(LS_KEY,k);sample=directSample(k);S.aiOn=true;render();flash("AI is on.")};
   const fk=$("forgetKey");if(fk)fk.onclick=()=>{lsSet(LS_KEY,null);sample=null;S.aiOn=false;render()};
-  const le=$("loadEx");if(le)le.onclick=loadExample;
+  $("banner").querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>loadExample(b.dataset.ex));
 }
 let confirmClear=false;
 async function clearAll(){
