@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Evolve</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a product operations console. North-star strip on top, the loop as tabs, one working stage at a time. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunk:#e9edf4; --line:#d5dbe6;
+  --fg:#16203a; --muted:#5a6683; --ink:#2b45c9; --ink-soft:#e3e8fb; --amber:#9a5c00; --amber-soft:#fbefd9;
+  --good:#167a4a; --good-soft:#dcf2e6; --bad:#b4322d; --bad-soft:#f9e1df;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1424; --surface:#161d31; --sunk:#1d2640; --line:#2b3654;
+  --fg:#e7ebf5; --muted:#9aa5c2; --ink:#8ea2ff; --ink-soft:#232f5c; --amber:#f0b04d; --amber-soft:#3a2e17;
+  --good:#5ccf93; --good-soft:#173527; --bad:#f08a83; --bad-soft:#3d1d1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1424; --surface:#161d31; --sunk:#1d2640; --line:#2b3654;
+  --fg:#e7ebf5; --muted:#9aa5c2; --ink:#8ea2ff; --ink-soft:#232f5c; --amber:#f0b04d; --amber-soft:#3a2e17;
+  --good:#5ccf93; --good-soft:#173527; --bad:#f08a83; --bad-soft:#3d1d1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.1;margin:0;letter-spacing:-.01em}
+.tagline{color:var(--muted);margin:0;font-size:14px}
+h2{font-family:var(--display);font-weight:700;font-size:21px;margin:0;text-wrap:balance}
+h3{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.status{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:5px;vertical-align:1px}
+.dot.on{background:var(--good)} .dot.off{background:var(--bad)}
+.strip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:center}
+.ns-label{font-size:12px;color:var(--muted)}
+.ns-val{font-family:var(--display);font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.chart{width:100%;height:auto;display:block}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.tabs button{all:unset;cursor:pointer;padding:10px 14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tabs button .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--ink)}
+.tabs button .count{font-family:var(--mono);font-size:11px;background:var(--sunk);padding:1px 6px;border-radius:999px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.panel{display:grid;gap:18px;min-width:0}
+.lede{color:var(--muted);max-width:72ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+label{font-size:13px;font-weight:600;display:grid;gap:6px}
+input,textarea,select{font:inherit;font-weight:400;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-width:0}
+textarea{resize:vertical;min-height:84px}
+input[type=number]{font-family:var(--mono)}
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:8px;padding:8px 14px;border:1px solid var(--ink);background:var(--ink);color:var(--surface);cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.quiet{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn.warn{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn.good{background:var(--good);border-color:var(--good)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.spacer{flex:1}
+.pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.02em;display:inline-block}
+.p-ink{background:var(--ink-soft);color:var(--ink)} .p-amber{background:var(--amber-soft);color:var(--amber)}
+.p-good{background:var(--good-soft);color:var(--good)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-mute{background:var(--sunk);color:var(--muted)}
+.ns-card{background:var(--ink-soft);border-color:transparent}
+.big{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.25}
+.list{display:grid}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .t{font-size:14px;overflow-wrap:anywhere}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:13px}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.note{font-size:13px;color:var(--muted)}
+.err{font-size:13px;color:var(--bad)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk);white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td input[type=number]{width:72px;padding:5px 6px;text-align:right}
+tr:last-child td{border-bottom:0}
+.formula{font-family:var(--mono);font-size:13px;background:var(--sunk);padding:9px 12px;border-radius:8px;overflow-x:auto}
+.problem{display:grid;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.problem:first-child{border-top:0}
+.quote{font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px}
+.exp{display:grid;gap:12px}
+.arms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.arm{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
+.arm .v{font-family:var(--mono);font-size:24px}
+.bar{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink)}
+.verdict{border-radius:10px;padding:12px 14px;display:grid;gap:4px;font-size:14px}
+.verdict.ok{background:var(--good-soft)} .verdict.no{background:var(--bad-soft)} .verdict.wait{background:var(--amber-soft)}
+.alert{border:1px solid var(--bad);border-left-width:4px;border-radius:8px;padding:12px 14px;display:grid;gap:8px;background:var(--bad-soft)}
+.answer{white-space:pre-wrap;font-size:14px;background:var(--sunk);border-radius:8px;padding:12px;min-height:44px;overflow-wrap:anywhere}
+.mem .item{grid-template-columns:96px minmax(0,1fr) auto}
+.when{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.banner{border-radius:10px;padding:10px 14px;font-size:14px;background:var(--amber-soft);color:var(--fg);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+footer{color:var(--muted);font-size:12px}
+@media (max-width:820px){.strip{grid-template-columns:minmax(0,1fr)} .grid3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.grid2,.arms{grid-template-columns:minmax(0,1fr)} .mem .item{grid-template-columns:minmax(0,1fr) auto} .mem .when{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>Evolve</h1><p class="tagline">The product team you can’t afford. It listens, watches competitors, tests and improves your product every week.</p></div>
+    <div class="status" id="status"></div>
+  </header>
+  <div id="banner"></div>
+  <section class="strip" aria-label="North star">
+    <div><div class="ns-label" id="nsLabel">North star · not set yet</div><div class="ns-val" id="nsVal">–</div><div class="note" id="nsNote">Set goals in Steer, then log readings in Health.</div></div>
+    <svg class="chart" id="nsChart" viewBox="0 0 640 110" role="img" aria-label="North star readings"></svg>
+  </section>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main class="panel" id="panel" aria-live="polite"></main>
+  <footer>Inside claude.ai the workspace is saved and shared with people you share the page with, and AI runs on the viewer’s own Claude account. Self-hosted, it saves in your browser and AI runs on your Anthropic API key.</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const TABS=[["steer","Steer"],["listen","Listen"],["bets","Bets"],["tests","Experiments"],["health","Health"],["memory","Memory"]];
+const KINDS=["Growth","Differentiation","Defence","Parity","Heal","Explore"];
+const SOURCES=["Survey","Support","Review","Interview","Telemetry","Competitor"];
+const S={tab:"steer",ws:null,signals:{},problems:{},bets:{},memory:{},metrics:{},busy:{},errs:{},drafts:{src:"Survey",paste:"",question:"",memo:""},proposal:null,diag:{},answer:"",dbOn:false,aiOn:false};
+let db=null, sample=null, downloads=null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
+const today=()=>new Date().toISOString().slice(0,10);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const list=c=>Object.entries(S[c]).map(([id,d])=>Object.assign({id},d));
+const byDate=(a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""));
+function phi(z){const t=1/(1+.2316419*Math.abs(z));const d=.3989423*Math.exp(-z*z/2);const p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p}
+const score=b=>num(b.impact,0)*num(b.conf,0)/Math.max(.5,num(b.weeks,1));
+
+/* ---------- storage: db when available, memory otherwise ---------- */
+const COLLS=["signals","problems","bets","memory","metrics"];
+const LS_DATA="evolve.workspace.v1", LS_KEY="evolve.anthropicKey";
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);return true}catch(e){return false}}
+function persistLocal(){if(db)return;const d={ws:S.ws};COLLS.forEach(c=>d[c]=S[c]);S.localSaved=lsSet(LS_DATA,JSON.stringify(d))}
+function loadLocal(){const raw=lsGet(LS_DATA);if(!raw)return false;try{const d=JSON.parse(raw);S.ws=d.ws||null;COLLS.forEach(c=>S[c]=d[c]||{});return true}catch(e){return false}}
+async function put(coll,id,data){
+  data=Object.assign({},data);
+  if(db){try{await db.collection(coll).doc(id).set(data);return}catch(e){flash("Could not save: "+(e&&e.code||"error")+". Try again.");throw e}}
+  S[coll][id]=data;persistLocal();render();
+}
+async function patch(coll,id,data){
+  const cur=Object.assign({},S[coll][id]||{},data);
+  return put(coll,id,cur);
+}
+async function remove(coll,id){
+  if(db){try{await db.collection(coll).doc(id).delete();return}catch(e){flash("Could not delete. Try again.");return}}
+  delete S[coll][id];persistLocal();render();
+}
+async function setWS(data){
+  const cur=Object.assign({},S.ws||{},data);
+  if(db){try{await db.doc("workspace/main").set(cur);return}catch(e){flash("Could not save the workspace. Try again.");return}}
+  S.ws=cur;persistLocal();render();
+}
+
+/* ---------- standalone AI: the user's own Anthropic API key, called from the browser ---------- */
+const MODELS={default:"claude-sonnet-5-5",complex:"claude-opus-5-5",quick:"claude-haiku-5-5"};
+function parseLoose(text){
+  const t=String(text||"").trim();
+  try{return JSON.parse(t)}catch(e){}
+  const f=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(f){try{return JSON.parse(f[1])}catch(e){}}
+  const a=t.search(/[\[{]/),b=Math.max(t.lastIndexOf("}"),t.lastIndexOf("]"));
+  if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1))}catch(e){}}
+  throw {code:"invalid_json",message:"No JSON in reply",text:t};
+}
+function directSample(key){
+  const call=async(input,opts)=>{
+    opts=opts||{};let res;
+    try{
+      res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:MODELS[opts.modelTier]||MODELS.default,max_tokens:4096,messages:[{role:"user",content:String(input)}]})});
+    }catch(e){throw {code:e&&e.name==="AbortError"?"cancelled":"upstream_error",message:String(e)}}
+    if(!res.ok){const c=res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error";throw {code:c,message:"HTTP "+res.status}}
+    const j=await res.json();const text=(j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+    if(!text.trim())throw {code:"empty_completion",message:"empty"};
+    if(opts.onText)opts.onText({text,delta:text});
+    return {text,truncated:j.stop_reason==="max_tokens"};
+  };
+  call.json=async(input,opts)=>{const r=await call(String(input)+"\n\nReply with only the JSON value, no other text.",opts);if(r.truncated)throw {code:"invalid_json",text:r.text};return parseLoose(r.text)};
+  call.direct=true;return call;
+}
+async function loadExample(){
+  try{const r=await fetch("examples/example-workspace.json");if(!r.ok)throw 0;const d=await r.json();
+    S.ws=d.workspace||null;COLLS.forEach(c=>{S[c]={};(d[c]||[]).forEach(x=>{const id=x.id;const o=Object.assign({},x);delete o.id;S[c][id]=o})});
+    persistLocal();render();flash("Example workspace loaded.");
+  }catch(e){flash("Couldn’t load the example. Serve the folder over http (see README) rather than opening the file directly.")}
+}
+function remember(text,kind){return put("memory",uid(),{text,kind:kind||"note",createdAt:new Date().toISOString()})}
+
+/* ---------- AI ---------- */
+const ERR={bad_key:"Anthropic rejected the API key. Check it and save it again.",not_granted:"AI is off for this page. You can still do every step by hand.",sampling_disabled:"AI isn’t available on this account. You can still do every step by hand.",rate_limited:"Too many AI requests right now. Wait a minute, then try again.",session_expired:"Sign in again to use AI.",invalid_json:"The AI answer came back in the wrong shape. Try again.",refused:"The AI declined this request. Rephrase the input and try again.",prompt_too_large:"Too much text for one request. Remove some signals and try again.",empty_completion:"The AI returned nothing. Try again with more detail."};
+function errCopy(e){return ERR[e&&e.code]||"The AI request failed. Try again."}
+async function ask(key,prompt,tier){
+  if(!sample){S.errs[key]="AI isn’t available in this view. You can still do every step by hand.";render();return null}
+  S.busy[key]=true;S.errs[key]="";render();
+  try{return await sample.json(prompt,{modelTier:tier||"default"})}
+  catch(e){S.errs[key]=errCopy(e);if(e&&(e.code==="not_granted"||e.code==="sampling_disabled")){S.aiOn=false}return null}
+  finally{S.busy[key]=false;render()}
+}
+function context(){
+  const ws=S.ws||{};
+  const mem=list("memory").sort(byDate).slice(0,15).map(m=>"- ["+(m.createdAt||"").slice(0,10)+"] "+m.text).join("\n")||"(none yet)";
+  const bets=list("bets").map(b=>"- "+b.title+" ["+b.kind+", "+b.status+"]").join("\n")||"(none yet)";
+  return "PRODUCT: "+(ws.product||"(not described)")+"\nBUSINESS GOAL: "+(ws.goal||"(not set)")+
+   "\nNORTH STAR: "+(ws.northStar?ws.northStar.name:"(not set)")+
+   "\nGUARDRAILS: "+((ws.guardrails||[]).map(g=>g.name+" "+g.op+" "+g.value+(g.unit||"")).join("; ")||"(none)")+
+   "\nDRIVERS: "+((ws.drivers||[]).map(d=>d.name).join(", ")||"(none)")+
+   "\nBETS SO FAR:\n"+bets+"\nMEMORY (what past cycles learned):\n"+mem;
+}
+
+/* ---------- Steer ---------- */
+async function proposeGoals(){
+  const product=S.drafts.product!=null?S.drafts.product:(S.ws&&S.ws.product)||"";
+  const goal=S.drafts.goal!=null?S.drafts.goal:(S.ws&&S.ws.goal)||"";
+  if(!product.trim()||!goal.trim()){S.errs.steer="Describe the product and the business goal first.";render();return}
+  const r=await ask("steer",
+`You are an experienced Chief Product Officer. Turn this business goal into a north star metric, a metric tree of 3-5 drivers, and 3-5 guardrails the product must not break.
+The north star should be a leading indicator of value the user gets, not revenue itself, unless revenue is the only sensible choice. Guardrails protect trust, quality, cost and retention.
+PRODUCT: ${product}
+BUSINESS GOAL: ${goal}
+PAST LEARNINGS:
+${list("memory").sort(byDate).slice(0,10).map(m=>"- "+m.text).join("\n")||"(none)"}
+Reply with only JSON in this shape:
+{"northStar":{"name":"short metric name","unit":"e.g. per user per week or %","why":"one or two sentences"},
+"drivers":[{"name":"Activation","definition":"exact definition"}],
+"guardrails":[{"name":"metric","op":"<=" or ">=","value":number,"unit":"% or blank","kind":"hard" or "soft"}]}`);
+  if(r&&r.northStar){S.proposal=r;render()}
+  else if(r){S.errs.steer="The AI answer was missing a north star. Try again."}
+}
+async function approveGoals(){
+  const p=S.proposal||{};
+  const product=S.drafts.product!=null?S.drafts.product:(S.ws&&S.ws.product)||"";
+  const goal=S.drafts.goal!=null?S.drafts.goal:(S.ws&&S.ws.goal)||"";
+  const g=(p.guardrails||[]).filter(x=>x&&x.name).map(x=>({name:String(x.name),op:x.op===">="?">=":"<=",value:num(x.value,0),unit:String(x.unit||""),kind:x.kind==="soft"?"soft":"hard"}));
+  const d=(p.drivers||[]).filter(x=>x&&x.name).map(x=>({name:String(x.name),definition:String(x.definition||"")}));
+  await setWS({product,goal,northStar:{name:String(p.northStar.name),unit:String(p.northStar.unit||""),why:String(p.northStar.why||"")},drivers:d,guardrails:g,approvedAt:new Date().toISOString()});
+  S.proposal=null;
+  await remember("Goals approved. North star: "+p.northStar.name+". Guardrails: "+g.map(x=>x.name).join(", ")+".","steer");
+}
+
+/* ---------- Listen ---------- */
+async function addSignals(){
+  const lines=(S.drafts.paste||"").split(/\n+/).map(s=>s.trim()).filter(Boolean).slice(0,200);
+  if(!lines.length)return;
+  const kind=S.drafts.src==="Competitor"?"market":"user";
+  for(const t of lines){await put("signals",uid(),{text:t.slice(0,600),source:S.drafts.src,kind,createdAt:new Date().toISOString()})}
+  S.drafts.paste="";render();
+}
+function parseCSV(text){
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+    else if(c==='"')q=true; else if(c===","){row.push(cell);cell=""} else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""} else cell+=c}
+  if(cell||row.length){row.push(cell);rows.push(row)}
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+function importCSV(file){
+  const fr=new FileReader();
+  fr.onload=async()=>{
+    const rows=parseCSV(String(fr.result||""));if(!rows.length){flash("That file has no rows.");return}
+    const head=rows[0].map(h=>h.trim().toLowerCase());
+    let col=head.findIndex(h=>/text|comment|feedback|review|message|body|response|answer/.test(h));
+    let start=1;if(col<0){col=0;start=/^[a-z _]+$/i.test(rows[0][0]||"")&&rows[0][0].length<30?1:0}
+    const texts=rows.slice(start).map(r=>(r[col]||"").trim()).filter(Boolean).slice(0,300);
+    const kind=S.drafts.src==="Competitor"?"market":"user";
+    for(const t of texts){await put("signals",uid(),{text:t.slice(0,600),source:S.drafts.src,kind,createdAt:new Date().toISOString()})}
+    flash("Imported "+texts.length+" signals from "+file.name+".");
+  };
+  fr.readAsText(file);
+}
+async function findProblems(){
+  const sig=list("signals").sort(byDate).slice(0,250);
+  if(sig.length<3){S.errs.listen="Add at least three signals first.";render();return}
+  const body=sig.map((s,i)=>(i+1)+". ["+s.source+"] "+s.text.slice(0,300)).join("\n");
+  const r=await ask("listen",
+`You are a product researcher. Group these signals into 3-7 distinct user problems, ranked by strength of evidence.
+Rules: a competitor move only counts as a problem when user signals show the same need; otherwise list it under "watching". Map each problem to one driver of the metric tree when you can.
+${context()}
+SIGNALS:
+${body.slice(0,40000)}
+Reply with only JSON:
+{"problems":[{"title":"short problem statement from the user's side","driver":"driver name or Other","evidence":3,"sources":["Survey","Support"],"quotes":["short quote 1","short quote 2"]}],
+"watching":[{"title":"competitor move with no user signal yet"}]}`);
+  if(!r||!Array.isArray(r.problems))return;
+  for(const id of Object.keys(S.problems))await remove("problems",id);
+  let i=0;for(const p of r.problems.slice(0,8)){await put("problems",uid(),{title:String(p.title||""),driver:String(p.driver||"Other"),evidence:num(p.evidence,1),sources:(p.sources||[]).map(String).slice(0,6),quotes:(p.quotes||[]).map(String).slice(0,3),rank:i++,createdAt:new Date().toISOString()})}
+  await setWS({watching:(r.watching||[]).map(w=>String(w.title||"")).filter(Boolean).slice(0,5)});
+}
+
+/* ---------- Bets ---------- */
+async function generateBets(){
+  const probs=list("problems").sort((a,b)=>a.rank-b.rank);
+  if(!probs.length){S.errs.bets="Find problems in Listen first, or add a bet by hand.";render();return}
+  const r=await ask("bets",
+`You are a CPO turning user problems into testable product bets. For each problem propose one concrete fix that can be A/B tested.
+Estimate: impact = expected % lift on the north star if it works (0.5-10), conf = confidence 0-1 informed by MEMORY (lower it for kinds of bets that failed before, raise it for patterns that worked), weeks = weeks to ship a testable version (1-8).
+kind is one of Growth, Differentiation, Defence, Parity, Heal, Explore. Include exactly one Explore bet: a bolder idea with lower confidence. Do not repeat bets already shipped or rolled back.
+metric = the single primary metric the A/B test should measure.
+${context()}
+PROBLEMS:
+${probs.map((p,i)=>(i+1)+". "+p.title+" (driver: "+p.driver+", evidence "+p.evidence+")").join("\n")}
+Reply with only JSON: {"bets":[{"title":"short name","fix":"one or two sentences","driver":"driver","kind":"Growth","impact":3,"conf":0.6,"weeks":2,"metric":"primary metric","why":"one sentence"}]}`);
+  if(!r||!Array.isArray(r.bets))return;
+  for(const b of r.bets.slice(0,8)){await put("bets",uid(),normBet(b))}
+}
+function normBet(b){return{title:String(b.title||"Untitled bet"),fix:String(b.fix||""),driver:String(b.driver||""),kind:KINDS.includes(b.kind)?b.kind:"Growth",impact:Math.max(0,num(b.impact,1)),conf:Math.min(1,Math.max(0,num(b.conf,.5))),weeks:Math.max(.5,num(b.weeks,1)),metric:String(b.metric||""),why:String(b.why||""),status:"ready",createdAt:new Date().toISOString()}}
+
+/* ---------- Experiments ---------- */
+function stats(t){
+  const nc=num(t&&t.nc,0),sc=num(t&&t.sc,0),nv=num(t&&t.nv,0),sv=num(t&&t.sv,0);
+  if(nc<1||nv<1||sc>nc||sv>nv)return null;
+  const pc=sc/nc,pv=sv/nv,se=Math.sqrt(pv*(1-pv)/nv+pc*(1-pc)/nc);
+  const prob=se>0?phi((pv-pc)/se):(pv>pc?1:pv<pc?0:.5);
+  return{pc,pv,prob,lift:pv-pc,rel:pc>0?(pv-pc)/pc:0,small:nc<200||nv<200};
+}
+async function decide(b,res){
+  const st=stats(b.test)||{};
+  await patch("bets",b.id,{status:res,decidedAt:new Date().toISOString()});
+  const d=st.lift!=null?((st.lift>=0?"+":"")+(st.lift*100).toFixed(1)+" pts on "+(b.metric||"the primary metric")+", "+(st.prob*100).toFixed(0)+"% chance better than control"):"no test data";
+  const lesson=res==="shipped"?`Shipped “${b.title}” (${b.kind}, ${b.driver}): ${d}. Similar ${b.kind.toLowerCase()} bets on ${b.driver||"this driver"} deserve more confidence.`
+                              :`Rolled back “${b.title}” (${b.kind}): ${d}. Be more sceptical of ${b.kind.toLowerCase()} bets like this without strong user evidence.`;
+  await remember(lesson,res==="shipped"?"ship":"rollback");
+}
+
+/* ---------- Health ---------- */
+function readings(){return list("metrics").sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.createdAt).localeCompare(String(b.createdAt)))}
+function breaches(r){
+  const ws=S.ws||{};const out=[];
+  for(const g of ws.guardrails||[]){const v=r&&r.values?r.values[g.name]:undefined;if(v==null||v==="")continue;
+    const n=Number(v);if(!Number.isFinite(n))continue;
+    if((g.op==="<="&&n>g.value)||(g.op===">="&&n<g.value))out.push({g,v:n})}
+  return out;
+}
+async function logReading(){
+  const ws=S.ws||{};const vals={};
+  const nsName=ws.northStar?ws.northStar.name:"North star";
+  const nsv=S.drafts["m_ns"];if(nsv!=null&&nsv!=="")vals[nsName]=Number(nsv);
+  (ws.guardrails||[]).forEach((g,i)=>{const v=S.drafts["m_g"+i];if(v!=null&&v!=="")vals[g.name]=Number(v)});
+  if(!Object.keys(vals).length){S.errs.health="Enter at least one value.";render();return}
+  await put("metrics",uid(),{date:S.drafts.m_date||today(),values:vals,note:S.drafts.m_note||"",createdAt:new Date().toISOString()});
+  Object.keys(S.drafts).filter(k=>k.startsWith("m_")).forEach(k=>delete S.drafts[k]);S.errs.health="";render();
+}
+async function diagnose(r,b){
+  const recent=list("bets").filter(x=>x.status==="shipped").sort((a,b)=>String(b.decidedAt).localeCompare(String(a.decidedAt))).slice(0,5);
+  const key="diag_"+r.id+"_"+b.g.name;
+  const res=await ask(key,
+`A guardrail was breached. Diagnose the most likely cause and propose the safest action.
+${context()}
+BREACH: ${b.g.name} is ${b.v}${b.g.unit} on ${r.date}; the limit is ${b.g.op} ${b.g.value}${b.g.unit}. Note logged with the reading: ${r.note||"(none)"}
+RECENT LAUNCHES: ${recent.map(x=>x.title+" ("+(x.decidedAt||"").slice(0,10)+")").join("; ")||"(none)"}
+Prefer reversible actions (roll back a launch or flag) over new builds. "autonomy" is "act-then-tell" only for a reversible, low-risk rollback; otherwise "ask-first".
+Reply with only JSON: {"cause":"one or two sentences","action":"one concrete action","reversible":true,"autonomy":"act-then-tell","confidence":0.6,"check":"what to watch next"}`);
+  if(res){S.diag[key]=res;render()}
+}
+
+/* ---------- Ask the CPO ---------- */
+let askCtl=null;
+async function askCPO(){
+  const q=(S.drafts.question||"").trim();if(!q)return;
+  if(!sample){S.errs.cpo="AI isn’t available in this view.";render();return}
+  askCtl=new AbortController();S.busy.cpo=true;S.answer="Thinking…";S.errs.cpo="";render();
+  const sig=list("signals").sort(byDate).slice(0,40).map(s=>"- ["+s.source+"] "+s.text.slice(0,200)).join("\n");
+  const probs=list("problems").map(p=>"- "+p.title).join("\n");
+  try{
+    await sample(`You are the Chief Product Officer for this product. Answer the founder's question directly and concretely in under 250 words, using the workspace below. Say plainly when the data is too thin to answer, and name what to collect.
+${context()}
+PROBLEMS:
+${probs||"(none)"}
+RECENT SIGNALS:
+${sig||"(none)"}
+QUESTION: ${q}`,{cache:false,signal:askCtl.signal,onText:({text})=>{S.answer=text;const el=$("answer");if(el)el.textContent=text}});
+  }catch(e){if(e&&e.code!=="cancelled"){S.errs.cpo=errCopy(e);S.answer=e.text||""}else{S.answer=e&&e.text||""}}
+  finally{S.busy.cpo=false;render()}
+}
+
+/* ---------- Export ---------- */
+async function exportJSON(){
+  const data={exportedAt:new Date().toISOString(),workspace:S.ws};COLLS.forEach(c=>data[c]=list(c));
+  if(downloads){try{await downloads.save({filename:"evolve-workspace-"+today()+".json",data:JSON.stringify(data,null,2)});return}catch(e){}}
+  S.drafts.exportText=JSON.stringify(data,null,2);render();
+}
+
+/* ---------- rendering ---------- */
+let flashT=null;
+function flash(msg){S.flash=msg;renderBanner();clearTimeout(flashT);flashT=setTimeout(()=>{S.flash="";renderBanner()},5000)}
+function renderBanner(){
+  const parts=[];
+  if(S.flash)parts.push(`<div class="banner" role="status">${esc(S.flash)}</div>`);
+  if(!S.dbOn&&S.ready&&!S.standalone)parts.push(`<div class="banner">Storage isn’t available in this view, so changes last only until you close the page.</div>`);
+  if(S.standalone&&S.ready&&!sample)parts.push(`<div class="banner"><span>AI is off. Paste an Anthropic API key to turn it on. It stays in this browser and is sent only to api.anthropic.com.</span><span class="spacer"></span><label for="apiKey" style="display:flex;gap:8px;align-items:center;font-weight:400"><span class="note">API key</span><input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-…" style="width:220px"></label><button class="btn sm" id="saveKey" type="button">Turn on AI</button></div>`);
+  if(S.standalone&&S.ready&&sample)parts.push(`<div class="banner" style="background:var(--sunk)"><span class="note">AI runs on your Anthropic API key, stored in this browser.</span><span class="spacer"></span><button class="btn sm quiet" id="forgetKey" type="button">Forget key</button></div>`);
+  if(S.standalone&&S.ready&&!S.ws&&!Object.keys(S.signals).length)parts.push(`<div class="banner"><span>New workspace. Start in Steer with your own product, or load the example to look around.</span><span class="spacer"></span><button class="btn sm ghost" id="loadEx" type="button">Load example</button></div>`);
+  if(S.ws&&S.ws.example)parts.push(`<div class="banner"><span>You’re looking at an <b>example workspace</b> (an AI email assistant, invented data). Replace it with your own product when ready.</span><span class="spacer"></span><button class="btn sm warn" id="clearEx" type="button">Clear example data</button></div>`);
+  $("banner").innerHTML=parts.join("");
+  const ce=$("clearEx");if(ce)ce.onclick=clearAll;
+  const sk=$("saveKey");if(sk)sk.onclick=()=>{const k=($("apiKey").value||"").trim();if(!k)return;lsSet(LS_KEY,k);sample=directSample(k);S.aiOn=true;render();flash("AI is on.")};
+  const fk=$("forgetKey");if(fk)fk.onclick=()=>{lsSet(LS_KEY,null);sample=null;S.aiOn=false;render()};
+  const le=$("loadEx");if(le)le.onclick=loadExample;
+}
+let confirmClear=false;
+async function clearAll(){
+  if(!confirmClear){confirmClear=true;flash("Click “Clear example data” again to delete everything in this workspace.");return}
+  confirmClear=false;
+  for(const c of COLLS)for(const id of Object.keys(S[c]))await remove(c,id);
+  if(db){try{await db.doc("workspace/main").set({product:"",goal:"",cleared:true})}catch(e){}}else{S.ws={product:"",goal:""};persistLocal()}
+  S.proposal=null;S.tab="steer";flash("Workspace cleared. Start by describing your product.");
+}
+function renderStatus(){
+  const saved=S.dbOn||(S.standalone&&S.localSaved!==false);
+  $("status").innerHTML=`<span><span class="dot ${saved?"on":"off"}"></span>${S.dbOn?"Saved":S.standalone&&saved?"Saved in this browser":"Not saved"}</span><span><span class="dot ${S.aiOn?"on":"off"}"></span>${S.aiOn?"AI ready":"AI off"}</span>`;
+}
+function renderNS(){
+  const ws=S.ws||{};const name=ws.northStar?ws.northStar.name:null;
+  $("nsLabel").textContent=name?"North star · "+name+(ws.northStar.unit?" ("+ws.northStar.unit+")":""):"North star · not set yet";
+  const pts=readings().filter(r=>r.values&&name&&r.values[name]!=null).map(r=>({d:r.date,v:Number(r.values[name])})).filter(p=>Number.isFinite(p.v));
+  const svg=$("nsChart");
+  if(!pts.length){$("nsVal").textContent="–";$("nsNote").textContent=name?"Log a reading in Health to start the trend.":"Set goals in Steer, then log readings in Health.";svg.innerHTML=`<text x="320" y="60" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="var(--body)">No readings yet</text>`;return}
+  const last=pts[pts.length-1],first=pts[0];
+  $("nsVal").textContent=(+last.v.toFixed(2)).toString();
+  const d=last.v-first.v;$("nsNote").innerHTML=pts.length>1?`<span class="mono" style="color:${d>=0?"var(--good)":"var(--bad)"}">${d>=0?"+":""}${(+d.toFixed(2))}</span> since ${esc(first.d)} · ${pts.length} readings`:"First reading "+esc(last.d);
+  const w=640,h=110,pl=8,pr=48,pt=12,pb=20;
+  const vs=pts.map(p=>p.v);let min=Math.min(...vs),max=Math.max(...vs);if(max-min<1e-9){min-=1;max+=1}const pad=(max-min)*.15;min-=pad;max+=pad;
+  const x=i=>pts.length>1?pl+i*(w-pl-pr)/(pts.length-1):(w-pr)/2, y=v=>pt+(max-v)*(h-pt-pb)/(max-min);
+  const line=pts.map((p,i)=>x(i).toFixed(1)+","+y(p.v).toFixed(1)).join(" ");
+  let g=`<line x1="${pl}" x2="${w-pr}" y1="${h-pb}" y2="${h-pb}" stroke="var(--line)"/>`;
+  if(pts.length>1)g+=`<polygon points="${x(0)},${h-pb} ${line} ${x(pts.length-1)},${h-pb}" fill="var(--ink)" opacity=".1"/><polyline points="${line}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+  g+=`<circle cx="${x(pts.length-1)}" cy="${y(last.v)}" r="4" fill="var(--ink)"/><text x="${Math.min(x(pts.length-1)+8,w-44)}" y="${y(last.v)-6}" font-size="12" font-weight="600" fill="var(--fg)" font-family="var(--mono)">${esc(+last.v.toFixed(2))}</text>`;
+  g+=`<text x="${pl}" y="${h-5}" font-size="10" fill="var(--muted)" font-family="var(--mono)">${esc(first.d)}</text><text x="${w-pr}" y="${h-5}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${esc(last.d)}</text>`;
+  svg.innerHTML=g;
+}
+function renderTabs(){
+  const counts={listen:Object.keys(S.signals).length,bets:list("bets").filter(b=>b.status==="ready").length,tests:list("bets").filter(b=>b.status==="testing").length,memory:Object.keys(S.memory).length};
+  $("tabs").innerHTML=TABS.map(([k,t],i)=>`<button role="tab" id="tab_${k}" aria-selected="${S.tab===k}" data-k="${k}" type="button"><span class="n">${i+1}</span>${t}${counts[k]?`<span class="count">${counts[k]}</span>`:""}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.k;render()});
+}
+const btnLabel=(key,idle)=>S.busy[key]?"Thinking…":idle;
+const errLine=key=>S.errs[key]?`<p class="err" role="alert">${esc(S.errs[key])}</p>`:"";
+const kindPill=k=>`<span class="pill ${k==="Parity"?"p-mute":k==="Defence"||k==="Explore"?"p-amber":k==="Heal"?"p-bad":"p-ink"}">${esc(k)}</span>`;
+
+function vSteer(){
+  const ws=S.ws||{};const p=S.proposal;
+  const product=S.drafts.product!=null?S.drafts.product:ws.product||"";
+  const goal=S.drafts.goal!=null?S.drafts.goal:ws.goal||"";
+  let current="";
+  if(ws.northStar&&!p){current=`
+   <div class="grid3">
+    <div class="card ns-card"><h3>North star</h3><p class="big">${esc(ws.northStar.name)}</p><p class="small">${esc(ws.northStar.why)}</p></div>
+    <div class="card"><h3>Metric tree drivers</h3><div class="list">${(ws.drivers||[]).map(d=>`<div class="item"><span class="pill p-ink">${esc(d.name)}</span><span class="t">${esc(d.definition)}</span><span></span></div>`).join("")||'<p class="empty">None</p>'}</div></div>
+    <div class="card"><h3>Guardrails</h3><div class="list">${(ws.guardrails||[]).map(g=>`<div class="item"><span class="pill ${g.kind==="hard"?"p-bad":"p-amber"}">${esc(g.kind)}</span><span class="t">${esc(g.name)}</span><span class="mono small">${esc(g.op)} ${esc(g.value)}${esc(g.unit)}</span></div>`).join("")||'<p class="empty">None</p>'}</div></div>
+   </div><p class="note">Approved ${esc((ws.approvedAt||"").slice(0,10))}. Ask again any time the goal changes.</p>`}
+  let prop="";
+  if(p){prop=`<div class="card" style="border-color:var(--ink)"><div class="row"><h2>Proposal from the AI CPO</h2><span class="spacer"></span><span class="pill p-amber">not approved yet</span></div>
+   <div class="grid3">
+    <div class="card ns-card"><h3>North star</h3><p class="big">${esc(p.northStar.name)}</p><p class="small">${esc(p.northStar.why)}</p></div>
+    <div class="card"><h3>Drivers</h3><div class="list">${(p.drivers||[]).map(d=>`<div class="item"><span class="pill p-ink">${esc(d.name)}</span><span class="t">${esc(d.definition)}</span><span></span></div>`).join("")}</div></div>
+    <div class="card"><h3>Guardrails</h3><div class="list">${(p.guardrails||[]).map(g=>`<div class="item"><span class="pill ${g.kind==="soft"?"p-amber":"p-bad"}">${esc(g.kind||"hard")}</span><span class="t">${esc(g.name)}</span><span class="mono small">${esc(g.op)} ${esc(g.value)}${esc(g.unit)}</span></div>`).join("")}</div></div>
+   </div><div class="row"><button class="btn good" id="approve" type="button">Approve and save goals</button><button class="btn quiet" id="discard" type="button">Discard</button><span class="note">Nothing changes until you approve.</span></div></div>`}
+  return `<div><h2>Steer</h2><p class="lede">Describe the product and what the business needs this half. The AI CPO proposes a north star, the drivers that move it, and the guardrails the loop must never break. You approve.</p></div>
+  <div class="card"><div class="grid2">
+   <label for="product">Product<textarea id="product" placeholder="What it is, who uses it, how it makes money">${esc(product)}</textarea></label>
+   <label for="goal">Business goal<textarea id="goal" placeholder="e.g. Grow paid conversion in the US without hurting trust">${esc(goal)}</textarea></label>
+  </div><div class="row"><button class="btn" id="propose" type="button" ${S.busy.steer?"disabled":""}>${btnLabel("steer",ws.northStar?"Ask the AI CPO again":"Ask the AI CPO")}</button>${ws.northStar?"":'<span class="note">Takes 10–40 seconds.</span>'}</div>${errLine("steer")}</div>
+  ${prop}${current}`;
+}
+function vListen(){
+  const sig=list("signals").sort(byDate);const probs=list("problems").sort((a,b)=>a.rank-b.rank);
+  const watching=(S.ws&&S.ws.watching)||[];
+  return `<div><h2>Listen and watch</h2><p class="lede">Bring in what users and the market are saying: survey answers, support tickets, reviews, interview notes, telemetry observations, competitor launches. Then let the AI group them into problems.</p></div>
+  <div class="grid2">
+   <div class="card"><h3>Add signals</h3>
+    <label for="src">Source<select id="src">${SOURCES.map(s=>`<option ${S.drafts.src===s?"selected":""}>${s}</option>`).join("")}</select></label>
+    <label for="paste">One signal per line<textarea id="paste" placeholder="“The trial ended before I saw any drafts”">${esc(S.drafts.paste)}</textarea></label>
+    <div class="row"><button class="btn" id="addSig" type="button">Add signals</button><label class="btn ghost" for="csv" style="display:inline-block">Import CSV<input type="file" id="csv" accept=".csv,text/csv" hidden></label></div>
+    <p class="note">CSV: uses a column named text, comment, feedback, review or response, else the first column. Imported rows take the source selected above.</p>
+   </div>
+   <div class="card"><div class="row"><h3>Problems, ranked by evidence</h3><span class="spacer"></span><button class="btn sm" id="find" type="button" ${S.busy.listen?"disabled":""}>${btnLabel("listen",probs.length?"Re-run":"Find problems")}</button></div>${errLine("listen")}
+    <div>${probs.map(p=>`<div class="problem"><div class="row"><b>${esc(p.title)}</b></div><div class="row"><span class="pill p-ink">${esc(p.driver)}</span><span class="note">evidence ${esc(p.evidence)} · ${esc((p.sources||[]).join(", "))}</span></div>${(p.quotes||[]).map(q=>`<p class="quote">${esc(q)}</p>`).join("")}</div>`).join("")||'<p class="empty">No problems yet. Add a few signals, then click Find problems.</p>'}</div>
+    ${watching.length?`<div><h3>Watching (competitor moves with no user signal yet)</h3>${watching.map(w=>`<p class="note">· ${esc(w)}</p>`).join("")}</div>`:""}
+   </div>
+  </div>
+  <div class="card"><div class="row"><h3>All signals</h3><span class="spacer"></span><span class="note mono">${sig.length}</span></div>
+   <div class="list">${sig.slice(0,120).map(s=>`<div class="item"><span class="pill ${s.kind==="market"?"p-amber":"p-ink"}">${esc(s.source)}</span><span class="t">${esc(s.text)}</span><button class="btn sm quiet" data-delsig="${esc(s.id)}" type="button" aria-label="Delete signal">Delete</button></div>`).join("")||'<p class="empty">No signals yet.</p>'}</div>
+   ${sig.length>120?`<p class="note">Showing the newest 120.</p>`:""}
+  </div>`;
+}
+function vBets(){
+  const bets=list("bets");const ready=bets.filter(b=>b.status==="ready").sort((a,b)=>score(b)-score(a));
+  const done=bets.filter(b=>b.status==="shipped"||b.status==="rolled back");
+  return `<div><h2>Bets</h2><p class="lede">Each problem becomes a testable fix. Ranked by the steepest step per week of work. Edit any estimate; the ranking updates. Confidence is informed by what earlier tests taught the loop.</p></div>
+  <div class="formula">score = impact (% lift on north star) × confidence ÷ weeks to ship</div>
+  <div class="row"><button class="btn" id="gen" type="button" ${S.busy.bets?"disabled":""}>${btnLabel("bets","Generate bets from problems")}</button><button class="btn ghost" id="addBet" type="button">Add a bet by hand</button></div>${errLine("bets")}
+  <div class="tablewrap"><table>
+   <thead><tr><th>Bet</th><th>Kind</th><th class="num">Impact %</th><th class="num">Conf.</th><th class="num">Weeks</th><th class="num">Score</th><th></th></tr></thead>
+   <tbody>${ready.map(b=>`<tr>
+    <td style="min-width:300px"><input aria-label="Bet name" data-bf="title" data-id="${esc(b.id)}" value="${esc(b.title)}"><div class="note" style="margin-top:6px">${esc(b.fix)}</div><div class="note">Driver: ${esc(b.driver||"–")} · Test metric: ${esc(b.metric||"–")}</div></td>
+    <td><select aria-label="Kind" data-bf="kind" data-id="${esc(b.id)}">${KINDS.map(k=>`<option ${b.kind===k?"selected":""}>${k}</option>`).join("")}</select></td>
+    <td class="num"><input type="number" step="0.1" min="0" aria-label="Impact" data-bf="impact" data-id="${esc(b.id)}" value="${esc(b.impact)}"></td>
+    <td class="num"><input type="number" step="0.05" min="0" max="1" aria-label="Confidence" data-bf="conf" data-id="${esc(b.id)}" value="${esc(b.conf)}"></td>
+    <td class="num"><input type="number" step="0.5" min="0.5" aria-label="Weeks" data-bf="weeks" data-id="${esc(b.id)}" value="${esc(b.weeks)}"></td>
+    <td class="num"><b>${score(b).toFixed(2)}</b></td>
+    <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-start="${esc(b.id)}" type="button">Start test</button><button class="btn sm quiet" data-delbet="${esc(b.id)}" type="button" aria-label="Delete bet">Delete</button></div></td></tr>`).join("")||`<tr><td colspan="7" class="empty">No bets waiting. Generate them from problems or add one by hand.</td></tr>`}</tbody>
+  </table></div>
+  ${done.length?`<div class="card"><h3>Decided</h3><div class="list">${done.sort((a,b)=>String(b.decidedAt).localeCompare(String(a.decidedAt))).map(b=>`<div class="item"><span class="pill ${b.status==="shipped"?"p-good":"p-bad"}">${esc(b.status)}</span><span class="t">${esc(b.title)} ${kindPill(b.kind)}</span><span class="when">${esc((b.decidedAt||"").slice(0,10))}</span></div>`).join("")}</div></div>`:""}`;
+}
+function vTests(){
+  const tests=list("bets").filter(b=>b.status==="testing");
+  return `<div><h2>Experiments</h2><p class="lede">Run each bet as an A/B test in your own product or experiment tool, then enter the counts here. Evolve checks the result and the guardrails, recommends launch or roll back, and you decide.</p></div>
+  ${tests.map(b=>{const t=b.test||{};const st=stats(t);
+   let verdict="";
+   if(st){
+     if(st.small)verdict=`<div class="verdict wait"><b>Too early to call.</b><span>Collect at least 200 users per arm. Current chance the variant is better: ${(st.prob*100).toFixed(0)}%.</span></div>`;
+     else if(st.prob>=.95)verdict=`<div class="verdict ok"><b>Recommend launch.</b><span>${(st.prob*100).toFixed(1)}% chance the variant beats control (${st.lift>=0?"+":""}${(st.lift*100).toFixed(2)} pts, ${st.rel>=0?"+":""}${(st.rel*100).toFixed(1)}% relative). Check the guardrails in Health before launching.</span></div>`;
+     else if(st.prob<=.8)verdict=`<div class="verdict no"><b>Recommend roll back.</b><span>Only ${(st.prob*100).toFixed(0)}% chance the variant beats control. Rolling back keeps the learning.</span></div>`;
+     else verdict=`<div class="verdict wait"><b>Promising, not proven.</b><span>${(st.prob*100).toFixed(0)}% chance it’s better. Keep the test running or ship to a small share.</span></div>`;
+   }
+   return `<div class="card exp"><div class="row"><h2>${esc(b.title)}</h2>${kindPill(b.kind)}<span class="spacer"></span><span class="note">started ${esc((b.startedAt||"").slice(0,10))}</span></div>
+    <p class="small muted">${esc(b.fix)}</p>
+    <label for="metric_${esc(b.id)}" style="max-width:420px">Primary metric<input id="metric_${esc(b.id)}" data-tm="metric" data-id="${esc(b.id)}" value="${esc(b.metric)}"></label>
+    <div class="arms">
+     <div class="arm"><h3>Control</h3><div class="grid2"><label for="nc_${esc(b.id)}">Users<input type="number" min="0" id="nc_${esc(b.id)}" data-tf="nc" data-id="${esc(b.id)}" value="${esc(t.nc==null?"":t.nc)}"></label><label for="sc_${esc(b.id)}">Converted<input type="number" min="0" id="sc_${esc(b.id)}" data-tf="sc" data-id="${esc(b.id)}" value="${esc(t.sc==null?"":t.sc)}"></label></div>${st?`<span class="v">${(st.pc*100).toFixed(2)}%</span><div class="bar"><i style="width:${Math.min(100,st.pc*100)}%;background:var(--muted)"></i></div>`:""}</div>
+     <div class="arm"><h3>Variant</h3><div class="grid2"><label for="nv_${esc(b.id)}">Users<input type="number" min="0" id="nv_${esc(b.id)}" data-tf="nv" data-id="${esc(b.id)}" value="${esc(t.nv==null?"":t.nv)}"></label><label for="sv_${esc(b.id)}">Converted<input type="number" min="0" id="sv_${esc(b.id)}" data-tf="sv" data-id="${esc(b.id)}" value="${esc(t.sv==null?"":t.sv)}"></label></div>${st?`<span class="v">${(st.pv*100).toFixed(2)}%</span><div class="bar"><i style="width:${Math.min(100,st.pv*100)}%"></i></div>`:""}</div>
+    </div>
+    ${verdict||'<p class="note">Enter users and conversions for both arms to see the result.</p>'}
+    <div class="row"><button class="btn good" data-ship="${esc(b.id)}" type="button">Launch to everyone</button><button class="btn warn" data-roll="${esc(b.id)}" type="button">Roll back</button><button class="btn quiet" data-back="${esc(b.id)}" type="button">Move back to bets</button></div>
+   </div>`}).join("")||'<div class="card"><p class="empty">No tests running. Pick a bet in Bets and click Start test.</p></div>'}`;
+}
+function vHealth(){
+  const ws=S.ws||{};const rs=readings();const nsName=ws.northStar?ws.northStar.name:null;
+  if(!nsName)return `<div><h2>Health</h2></div><div class="card"><p class="empty">Approve goals in Steer first, so Evolve knows what to watch.</p></div>`;
+  const latest=rs[rs.length-1];
+  const br=latest?breaches(latest):[];
+  return `<div><h2>Health</h2><p class="lede">Log the north star and guardrails each week (or after a launch). When a guardrail breaks, Evolve diagnoses the likely cause and proposes the safest fix. Reversible rollbacks can be applied straight away; everything else asks first.</p></div>
+  <div class="card"><h3>Log a reading</h3>
+   <div class="grid3">
+    <label for="m_date">Date<input type="date" id="m_date" data-d="m_date" value="${esc(S.drafts.m_date||today())}"></label>
+    <label for="m_ns">${esc(nsName)}<input type="number" step="any" id="m_ns" data-d="m_ns" value="${esc(S.drafts.m_ns||"")}"></label>
+    ${(ws.guardrails||[]).map((g,i)=>`<label for="m_g${i}">${esc(g.name)} <span class="note">(${esc(g.op)} ${esc(g.value)}${esc(g.unit)})</span><input type="number" step="any" id="m_g${i}" data-d="m_g${i}" value="${esc(S.drafts["m_g"+i]||"")}"></label>`).join("")}
+   </div>
+   <label for="m_note">Note (what changed this week)<input id="m_note" data-d="m_note" value="${esc(S.drafts.m_note||"")}" placeholder="e.g. new model rolled out Tuesday"></label>
+   <div class="row"><button class="btn" id="logR" type="button">Save reading</button></div>${errLine("health")}
+  </div>
+  ${br.map(b=>{const key="diag_"+latest.id+"_"+b.g.name;const dg=S.diag[key];return `<div class="alert" role="alert"><b>${esc(b.g.name)} is ${esc(b.v)}${esc(b.g.unit)} on ${esc(latest.date)}. Limit ${esc(b.g.op)} ${esc(b.g.value)}${esc(b.g.unit)}.</b>
+    ${dg?`<span><b>Likely cause:</b> ${esc(dg.cause)}</span><span><b>Action:</b> ${esc(dg.action)}</span><span class="row"><span class="pill ${dg.autonomy==="act-then-tell"?"p-good":"p-amber"}">${dg.autonomy==="act-then-tell"?"safe to apply now":"needs your approval"}</span><span class="pill p-mute">confidence ${esc(Math.round(num(dg.confidence,0)*100))}%</span>${dg.reversible?'<span class="pill p-mute">reversible</span>':""}</span><span class="small">Watch next: ${esc(dg.check)}</span>
+     <div class="row"><button class="btn sm" data-heal="${esc(key)}" type="button">Mark as applied and remember</button></div>`
+    :`<div class="row"><button class="btn sm" data-diag="${esc(latest.id)}|${esc(b.g.name)}" type="button" ${S.busy[key]?"disabled":""}>${btnLabel(key,"Diagnose")}</button></div>${errLine(key)}`}
+  </div>`}).join("")}
+  <div class="card"><h3>Readings</h3>
+   <div class="tablewrap" style="border:0"><table style="min-width:520px"><thead><tr><th>Date</th><th class="num">${esc(nsName)}</th>${(ws.guardrails||[]).map(g=>`<th class="num">${esc(g.name)}</th>`).join("")}<th>Note</th><th></th></tr></thead>
+   <tbody>${rs.slice().reverse().map(r=>{const bad=breaches(r).map(x=>x.g.name);return `<tr><td class="mono">${esc(r.date)}</td><td class="num">${esc(r.values&&r.values[nsName]!=null?r.values[nsName]:"–")}</td>${(ws.guardrails||[]).map(g=>`<td class="num" style="${bad.includes(g.name)?"color:var(--bad);font-weight:600":""}">${esc(r.values&&r.values[g.name]!=null?r.values[g.name]:"–")}${bad.includes(g.name)?" ▲":""}</td>`).join("")}<td class="small">${esc(r.note||"")}</td><td><button class="btn sm quiet" data-delm="${esc(r.id)}" type="button" aria-label="Delete reading">Delete</button></td></tr>`}).join("")||`<tr><td colspan="9" class="empty">No readings yet.</td></tr>`}</tbody></table></div>
+  </div>`;
+}
+function vMemory(){
+  const mem=list("memory").sort(byDate);
+  return `<div><h2>Memory and the CPO</h2><p class="lede">Everything the loop learned: approved goals, launches, rollbacks, heals and your notes. Every AI step reads the latest entries, which is how the next cycle starts smarter.</p></div>
+  <div class="grid2">
+   <div class="card"><h3>Ask the AI CPO</h3>
+    <label for="question" class="sr">Question<textarea id="question" placeholder="What should we test next if trial conversion is our only goal this month?">${esc(S.drafts.question)}</textarea></label>
+    <div class="row"><button class="btn" id="askBtn" type="button" ${S.busy.cpo?"disabled":""}>${S.busy.cpo?"Answering…":"Ask"}</button>${S.busy.cpo?'<button class="btn quiet" id="stopBtn" type="button">Stop</button>':""}</div>${errLine("cpo")}
+    <div class="answer" id="answer">${esc(S.answer||"Answers use your goals, problems, bets and memory.")}</div>
+   </div>
+   <div class="card"><h3>Add a note to memory</h3>
+    <label for="memo">What did you learn?<textarea id="memo" placeholder="e.g. Enterprise users ignore in-app nudges; email works better">${esc(S.drafts.memo)}</textarea></label>
+    <div class="row"><button class="btn" id="addMemo" type="button">Remember</button><span class="spacer"></span><button class="btn quiet" id="exportBtn" type="button">Export workspace</button></div>
+    ${S.drafts.exportText?`<label for="exportText">Workspace JSON (select all and copy)<textarea id="exportText" readonly style="min-height:160px;font-family:var(--mono);font-size:12px">${esc(S.drafts.exportText)}</textarea></label>`:""}
+   </div>
+  </div>
+  <div class="card mem"><h3>Memory log</h3><div class="list">${mem.map(m=>`<div class="item"><span class="when">${esc((m.createdAt||"").slice(0,10))}</span><span class="t">${esc(m.text)}</span><button class="btn sm quiet" data-delmem="${esc(m.id)}" type="button" aria-label="Delete memory">Delete</button></div>`).join("")||'<p class="empty">Nothing yet. Approve goals or decide a test to add the first entry.</p>'}</div></div>`;
+}
+
+function render(){
+  renderStatus();renderBanner();renderTabs();renderNS();
+  const v={steer:vSteer,listen:vListen,bets:vBets,tests:vTests,health:vHealth,memory:vMemory}[S.tab];
+  const ae=document.activeElement, aid=ae&&ae.id, sel=ae&&typeof ae.selectionStart==="number"?[ae.selectionStart,ae.selectionEnd]:null;
+  $("panel").innerHTML=v();bind();
+  if(aid){const el=$(aid);if(el&&el!==document.activeElement&&el.closest("#panel")){el.focus();if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+function on(id,ev,fn){const el=$(id);if(el)el[ev]=fn}
+function bind(){
+  on("product","oninput",e=>S.drafts.product=e.target.value);
+  on("goal","oninput",e=>S.drafts.goal=e.target.value);
+  on("propose","onclick",proposeGoals);
+  on("approve","onclick",approveGoals);
+  on("discard","onclick",()=>{S.proposal=null;render()});
+  on("src","onchange",e=>S.drafts.src=e.target.value);
+  on("paste","oninput",e=>S.drafts.paste=e.target.value);
+  on("addSig","onclick",addSignals);
+  on("csv","onchange",e=>{const f=e.target.files&&e.target.files[0];if(f)importCSV(f);e.target.value=""});
+  on("find","onclick",findProblems);
+  on("gen","onclick",generateBets);
+  on("addBet","onclick",()=>put("bets",uid(),normBet({title:"New bet",kind:"Growth",impact:1,conf:.5,weeks:1})));
+  on("logR","onclick",logReading);
+  on("question","oninput",e=>S.drafts.question=e.target.value);
+  on("askBtn","onclick",askCPO);
+  on("stopBtn","onclick",()=>askCtl&&askCtl.abort());
+  on("memo","oninput",e=>S.drafts.memo=e.target.value);
+  on("addMemo","onclick",async()=>{const t=(S.drafts.memo||"").trim();if(!t)return;S.drafts.memo="";await remember(t,"note");render()});
+  on("exportBtn","onclick",exportJSON);
+  const P=$("panel");
+  P.querySelectorAll("[data-delsig]").forEach(b=>b.onclick=()=>remove("signals",b.dataset.delsig));
+  P.querySelectorAll("[data-delbet]").forEach(b=>b.onclick=()=>remove("bets",b.dataset.delbet));
+  P.querySelectorAll("[data-delm]").forEach(b=>b.onclick=()=>remove("metrics",b.dataset.delm));
+  P.querySelectorAll("[data-delmem]").forEach(b=>b.onclick=()=>remove("memory",b.dataset.delmem));
+  P.querySelectorAll("[data-bf]").forEach(el=>el.onchange=()=>{const f=el.dataset.bf;let v=el.value;if(["impact","conf","weeks"].includes(f))v=num(v,0);if(f==="conf")v=Math.min(1,Math.max(0,v));if(f==="weeks")v=Math.max(.5,v);patch("bets",el.dataset.id,{[f]:v})});
+  P.querySelectorAll("[data-start]").forEach(b=>b.onclick=async()=>{await patch("bets",b.dataset.start,{status:"testing",startedAt:new Date().toISOString(),test:{}});S.tab="tests";render()});
+  P.querySelectorAll("[data-tf]").forEach(el=>el.onchange=()=>{const b=S.bets[el.dataset.id];const t=Object.assign({},b&&b.test||{});t[el.dataset.tf]=el.value===""?null:Math.max(0,Math.round(num(el.value,0)));patch("bets",el.dataset.id,{test:t})});
+  P.querySelectorAll("[data-tm]").forEach(el=>el.onchange=()=>patch("bets",el.dataset.id,{metric:el.value}));
+  P.querySelectorAll("[data-ship]").forEach(b=>b.onclick=()=>{const x=Object.assign({id:b.dataset.ship},S.bets[b.dataset.ship]);decide(x,"shipped")});
+  P.querySelectorAll("[data-roll]").forEach(b=>b.onclick=()=>{const x=Object.assign({id:b.dataset.roll},S.bets[b.dataset.roll]);decide(x,"rolled back")});
+  P.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>patch("bets",b.dataset.back,{status:"ready"}));
+  P.querySelectorAll("[data-d]").forEach(el=>el.oninput=()=>S.drafts[el.dataset.d]=el.value);
+  P.querySelectorAll("[data-diag]").forEach(b=>b.onclick=()=>{const[rid,gname]=b.dataset.diag.split("|");const r=Object.assign({id:rid},S.metrics[rid]);const br=breaches(r).find(x=>x.g.name===gname);if(br)diagnose(r,br)});
+  P.querySelectorAll("[data-heal]").forEach(b=>b.onclick=async()=>{const dg=S.diag[b.dataset.heal];if(!dg)return;await remember("Self-heal: "+dg.action+" Cause: "+dg.cause,"heal");delete S.diag[b.dataset.heal];flash("Saved to memory.")});
+}
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  const c=window.claude;
+  if(c&&c.use){
+    [db,sample,downloads]=await Promise.all([c.use("db").catch(()=>null),c.use("sample").catch(()=>null),c.use("downloads").catch(()=>null)]);
+  } else {
+    S.standalone=true;loadLocal();
+    const k=lsGet(LS_KEY);if(k)sample=directSample(k);
+  }
+  S.dbOn=!!db;S.aiOn=!!sample;S.ready=true;
+  if(db){
+    db.doc("workspace/main").onSnapshot(s=>{S.ws=s.exists?s.data():null;render()},()=>{S.dbOn=false;render()});
+    COLLS.forEach(coll=>db.collection(coll).onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{m[d.id]=d.data()});S[coll]=m;render()},()=>{}));
+  }
+  render();
+})();
+})();
+</script>
+
+</body>
+</html>

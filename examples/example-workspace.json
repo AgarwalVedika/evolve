@@ -1,0 +1,47 @@
+{
+  "_note": "Invented example data for an AI email assistant. Not real company data.",
+  "workspace": {
+    "example": true,
+    "product": "Example: an AI email assistant inside Gmail and Outlook. It sorts the inbox, pre-drafts replies in the user's voice, and takes meeting notes. Sold to professionals on a 7-day free trial, then a monthly plan.",
+    "goal": "Grow paid conversion in the US this half without hurting users' trust in drafts.",
+    "northStar": {
+      "name": "Drafts sent with light edits per active inbox per week",
+      "unit": "drafts",
+      "why": "Revenue follows habit, and habit follows drafts people trust enough to send. Paid conversion is the lagging result."
+    },
+    "drivers": [
+      {"name": "Activation", "definition": "Share of new installs that send a first draft within 24 hours"},
+      {"name": "Trust", "definition": "Share of drafts sent with light or no edits"},
+      {"name": "Habit", "definition": "Days per week with at least one sent draft"},
+      {"name": "Expansion", "definition": "Colleagues invited per paid account"}
+    ],
+    "guardrails": [
+      {"name": "Draft regret rate", "op": "<=", "value": 4.5, "unit": "%", "kind": "hard"},
+      {"name": "30-day paid retention", "op": ">=", "value": 88, "unit": "%", "kind": "soft"},
+      {"name": "Cost per active inbox", "op": "<=", "value": 1.1, "unit": "$", "kind": "soft"}
+    ],
+    "approvedAt": "2026-11-02T15:30:00Z"
+  },
+  "signals": [
+    {"id": "ex1", "text": "Drafts to first-time contacts get the greeting and sign-off rewritten about 38% of the time.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T10:00:00Z"},
+    {"id": "ex2", "text": "It writes to my clients like it writes to my team. Too casual for a first email.", "source": "Survey", "kind": "user", "createdAt": "2026-11-02T10:01:00Z"},
+    {"id": "ex3", "text": "Half of trial users never open the Drafts folder in their first two days.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T10:02:00Z"},
+    {"id": "ex4", "text": "Trial ended before I realised the drafts were already sitting there.", "source": "Support", "kind": "user", "createdAt": "2026-11-02T10:03:00Z"},
+    {"id": "ex5", "text": "Scheduling emails are regenerated about twice as often as any other type.", "source": "Telemetry", "kind": "user", "createdAt": "2026-11-02T10:04:00Z"},
+    {"id": "ex6", "text": "I don't send drafts on emails with contracts attached. I can't tell what it read.", "source": "Survey", "kind": "user", "createdAt": "2026-11-02T10:05:00Z"},
+    {"id": "ex7", "text": "Switched away because the other tool books the meeting for me, this one just drafts a reply.", "source": "Review", "kind": "user", "createdAt": "2026-11-02T10:06:00Z"},
+    {"id": "ex8", "text": "Love it, but I wish I could tell it to be more formal with certain people.", "source": "Interview", "kind": "user", "createdAt": "2026-11-02T10:07:00Z"},
+    {"id": "ex9", "text": "A built-in mail assistant shipped free tone presets this month.", "source": "Competitor", "kind": "market", "createdAt": "2026-11-02T10:08:00Z"},
+    {"id": "ex10", "text": "A rival assistant now books meetings end to end from email.", "source": "Competitor", "kind": "market", "createdAt": "2026-11-02T10:09:00Z"}
+  ],
+  "problems": [],
+  "bets": [],
+  "metrics": [
+    {"id": "exm1", "date": "2026-10-12", "values": {"Drafts sent with light edits per active inbox per week": 13.8, "Draft regret rate": 4.0, "30-day paid retention": 89.5, "Cost per active inbox": 0.95}, "note": "", "createdAt": "2026-10-12T09:00:00Z"},
+    {"id": "exm2", "date": "2026-10-19", "values": {"Drafts sent with light edits per active inbox per week": 14.2, "Draft regret rate": 4.1, "30-day paid retention": 89.1, "Cost per active inbox": 0.97}, "note": "", "createdAt": "2026-10-19T09:00:00Z"},
+    {"id": "exm3", "date": "2026-10-26", "values": {"Drafts sent with light edits per active inbox per week": 13.6, "Draft regret rate": 5.3, "30-day paid retention": 88.7, "Cost per active inbox": 0.99}, "note": "New drafting model rolled out to all languages on Tuesday", "createdAt": "2026-10-26T09:00:00Z"}
+  ],
+  "memory": [
+    {"id": "exmem1", "text": "Goals approved. North star: Drafts sent with light edits per active inbox per week. Guardrails: Draft regret rate, 30-day paid retention, Cost per active inbox.", "kind": "steer", "createdAt": "2026-11-02T15:30:00Z"}
+  ]
+}

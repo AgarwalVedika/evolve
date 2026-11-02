@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inbox Evolution Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a control-room page. Thin north-star strip on top, the five-stage loop as a rail on the left, the working stage on the right. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunk:#e9edf4; --line:#d5dbe6;
+  --fg:#16203a; --muted:#5a6683; --ink:#2b45c9; --ink-soft:#e3e8fb; --amber:#b86e00; --amber-soft:#fbefd9;
+  --good:#167a4a; --good-soft:#dcf2e6; --bad:#b4322d; --bad-soft:#f9e1df;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1424; --surface:#161d31; --sunk:#1d2640; --line:#2b3654;
+  --fg:#e7ebf5; --muted:#9aa5c2; --ink:#8ea2ff; --ink-soft:#232f5c; --amber:#f0b04d; --amber-soft:#3a2e17;
+  --good:#5ccf93; --good-soft:#173527; --bad:#f08a83; --bad-soft:#3d1d1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1424; --surface:#161d31; --sunk:#1d2640; --line:#2b3654;
+  --fg:#e7ebf5; --muted:#9aa5c2; --ink:#8ea2ff; --ink-soft:#232f5c; --amber:#f0b04d; --amber-soft:#3a2e17;
+  --good:#5ccf93; --good-soft:#173527; --bad:#f08a83; --bad-soft:#3d1d1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:4px;background:var(--amber-soft);color:var(--amber);white-space:nowrap}
+h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0}
+.strip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:16px;align-items:center}
+.ns-label{font-size:12px;color:var(--muted)}
+.ns-val{font-family:var(--display);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.ns-delta{font-family:var(--mono);font-size:12px}
+.up{color:var(--good)} .down{color:var(--bad)}
+.chart{width:100%;height:auto;display:block}
+.main{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+nav ol{list-style:none;margin:0;padding:0;display:grid;gap:4px;counter-reset:s}
+nav button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:center;width:100%;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--muted)}
+nav button .n{font-family:var(--mono);font-size:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface)}
+nav button .t{font-weight:600;color:var(--fg)} nav button small{display:block;font-size:12px}
+nav button[aria-current="step"]{background:var(--ink-soft)}
+nav button[aria-current="step"] .n{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+nav button.done .n{border-color:var(--good);color:var(--good)}
+nav button:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.loopnote{margin-top:12px;font-size:12px;color:var(--muted);padding:0 12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;display:grid;gap:20px;min-width:0}
+.lede{color:var(--muted);max-width:68ch}
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:8px;padding:9px 16px;border:1px solid var(--ink);background:var(--ink);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.warn{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+textarea{width:100%;font:inherit;padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);resize:vertical;min-height:72px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.box{border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;min-width:0}
+.ns-card{background:var(--ink-soft);border-color:transparent}
+.big{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.25}
+ul.clean{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.gr{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;font-size:14px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pill{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:999px;white-space:nowrap;letter-spacing:.02em}
+.p-ink{background:var(--ink-soft);color:var(--ink)} .p-amber{background:var(--amber-soft);color:var(--amber)}
+.p-good{background:var(--good-soft);color:var(--good)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-mute{background:var(--sunk);color:var(--muted)}
+.tree{display:grid;gap:10px}
+.tree-root{text-align:center;font-weight:600;padding:10px;border-radius:8px;background:var(--fg);color:var(--bg)}
+.tree-kids{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.leaf{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;min-width:0}
+.leaf b{font-size:14px} .leaf span{font-size:12px;color:var(--muted)}
+.leaf .mono{font-size:18px}
+.sig{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.sig:first-of-type{border-top:0}
+.sig q{quotes:none;font-size:14px}
+.sig .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.sel td{background:var(--ink-soft)}
+tr:last-child td{border-bottom:0}
+.formula{font-family:var(--mono);font-size:13px;background:var(--sunk);padding:10px 12px;border-radius:8px;overflow-x:auto}
+.abwrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.arm{border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:6px}
+.arm .mono.v{font-size:28px}
+.bar{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--muted);transition:width .3s}
+.arm.var .bar i{background:var(--ink)}
+.prob{display:grid;gap:6px}
+.verdict{border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.verdict.ok{background:var(--good-soft)} .verdict.no{background:var(--bad-soft)} .verdict.wait{background:var(--amber-soft)}
+.alert{border:1px solid var(--bad);border-left-width:4px;border-radius:8px;padding:14px;display:grid;gap:8px;background:var(--bad-soft)}
+.log li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;font-size:14px;padding:8px 0;border-top:1px solid var(--line)}
+.log li:first-child{border-top:0}
+.log .when{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px}
+.ladder td:nth-child(2){font-family:var(--mono);font-size:13px}
+footer{color:var(--muted);font-size:12px;max-width:80ch}
+@media (max-width:860px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  nav ol{grid-template-columns:repeat(5,minmax(0,1fr))}
+  nav button{grid-template-columns:1fr;justify-items:center;text-align:center;padding:8px 4px;gap:4px}
+  nav button small{display:none} nav button .t{font-size:12px}
+  .loopnote{display:none}
+  .strip{grid-template-columns:minmax(0,1fr)}
+  .tree-kids{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){.grid2,.abwrap{grid-template-columns:minmax(0,1fr)} .panel{padding:16px}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Inbox Evolution Loop</h1>
+      <p class="sub">A self-evolving product loop applied to an AI email assistant. The AI CPO sets goals, the loop listens to users and the market, ranks bets, tests them, and ships or heals. Every change waits for your approval until it earns autonomy.</p>
+    </div>
+    <span class="tag">Concept demo · simulated data</span>
+  </header>
+
+  <section class="strip" aria-label="North star">
+    <div>
+      <div class="ns-label">North star · drafts sent with light edits, per active inbox per week</div>
+      <div class="ns-val" id="nsVal">14.2</div>
+      <div class="ns-delta" id="nsDelta">baseline, last 12 weeks</div>
+    </div>
+    <svg class="chart" id="nsChart" viewBox="0 0 640 120" role="img" aria-label="North star trend"></svg>
+  </section>
+
+  <div class="main">
+    <nav aria-label="Loop stages">
+      <ol id="steps"></ol>
+      <p class="loopnote">Stage 5 feeds back into stage 2. Each cycle starts with what the last one learned.</p>
+    </nav>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>
+
+  <footer>Independent concept by the author. The product, users, signals and results are invented for illustration; no company data is used.</footer>
+</div>
+
+<script>
+(function(){
+const STEPS=[
+ {t:"Steer",s:"AI CPO sets goals"},
+ {t:"Listen",s:"Users and market"},
+ {t:"Prioritise",s:"Rank the bets"},
+ {t:"Test",s:"Run the experiment"},
+ {t:"Ship & learn",s:"Launch, heal, remember"}
+];
+const BETS=[
+ {id:"b1",name:"Day-one draft digest",fix:"Email new trial users a digest of their first five ready drafts within 6 hours, so they see value before the 7-day trial ends.",driver:"Activation",type:"Growth",impact:3.0,conf:0.7,weeks:1,metric:"Trial to paid",base:0.22,lift:0.034,ns:0.9,regret:0},
+ {id:"b2",name:"Per-recipient tone memory",fix:"Learn tone per contact from the user's own edits, so drafts to clients stop sounding like drafts to colleagues.",driver:"Trust",type:"Differentiation",impact:4.0,conf:0.6,weeks:3,metric:"Light-edit rate",base:0.61,lift:0.04,ns:1.2,regret:-0.003},
+ {id:"b3",name:"Calendar-aware scheduling replies",fix:"Draft scheduling replies with real free slots from the calendar instead of vague offers.",driver:"Habit",type:"Defence",impact:3.5,conf:0.4,weeks:4,metric:"Scheduling drafts sent",base:0.48,lift:0.02,ns:0.5,regret:0.004,explore:true},
+ {id:"b4",name:"“What I read” chips",fix:"Show which attachments and past threads a draft used, so users trust drafts on complex emails.",driver:"Trust",type:"Heal",impact:1.8,conf:0.65,weeks:1,metric:"Drafts sent on emails with attachments",base:0.39,lift:0.02,ns:0.4,regret:-0.002},
+ {id:"b5",name:"Tone preset menu",fix:"Add formal / friendly / brief presets, matching a free feature in a built-in mail assistant.",driver:"Trust",type:"Parity",impact:1.2,conf:0.5,weeks:2,metric:"Light-edit rate",base:0.61,lift:0.0,ns:0,regret:0.001}
+];
+const S={step:0,approved:false,bet:"b1",test:null,running:false,cycle:1,ns:[],log:[],shipped:[],healed:false,goal:"Grow paid conversion in the US without losing users' trust in drafts."};
+
+// seeded RNG
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function phi(z){const t=1/(1+.2316419*Math.abs(z));const d=.3989423*Math.exp(-z*z/2);const p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p}
+(function(){const r=rng(7);let v=13.6;for(let i=0;i<12;i++){v+=0.06+gauss(r)*0.18;S.ns.push(+v.toFixed(2))}S.ns[11]=14.2})();
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const score=b=>b.impact*b.conf/b.weeks;
+const fmtP=x=>(x*100).toFixed(1)+"%";
+function now(){return "Cycle "+S.cycle}
+function addLog(text){S.log.unshift({when:now(),text})}
+
+function drawNS(){
+  const v=S.ns,w=640,h=120,pl=8,pr=44,pt=10,pb=18;
+  const min=Math.min(...v)-0.4,max=Math.max(...v)+0.4;
+  const x=i=>pl+i*(w-pl-pr)/(v.length-1), y=val=>pt+(max-val)*(h-pt-pb)/(max-min);
+  const pts=v.map((val,i)=>x(i).toFixed(1)+","+y(val).toFixed(1)).join(" ");
+  const base=y(14.2);
+  const lastI=v.length-1;
+  let g="";
+  g+=`<line x1="${pl}" x2="${w-pr}" y1="${base}" y2="${base}" stroke="var(--line)" stroke-dasharray="3 4"/>`;
+  g+=`<text x="${w-pr+6}" y="${base+4}" font-size="11" fill="var(--muted)" font-family="var(--mono)">14.2</text>`;
+  g+=`<polygon points="${pl},${h-pb} ${pts} ${x(lastI)},${h-pb}" fill="var(--ink)" opacity=".10"/>`;
+  g+=`<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+  if(v.length>12){g+=`<line x1="${x(11)}" x2="${x(11)}" y1="${pt}" y2="${h-pb}" stroke="var(--muted)" stroke-width="1" opacity=".4"/><text x="${x(11)+4}" y="${h-4}" font-size="10" fill="var(--muted)" font-family="var(--mono)">loop on</text>`}
+  g+=`<circle cx="${x(lastI)}" cy="${y(v[lastI])}" r="4" fill="var(--ink)"/>`;
+  g+=`<text x="${x(lastI)+8}" y="${y(v[lastI])-6}" font-size="12" font-weight="600" fill="var(--fg)" font-family="var(--mono)">${v[lastI].toFixed(1)}</text>`;
+  g+=`<text x="${pl}" y="${h-4}" font-size="10" fill="var(--muted)" font-family="var(--mono)">12 weeks ago</text>`;
+  $("nsChart").innerHTML=g;
+  const last=v[lastI],d=last-14.2;
+  $("nsVal").textContent=last.toFixed(1);
+  $("nsDelta").innerHTML=v.length>12?`<span class="${d>=0?"up":"down"}">${d>=0?"+":""}${d.toFixed(1)} (${d>=0?"+":""}${(d/14.2*100).toFixed(1)}%)</span> since the loop started`:"baseline, last 12 weeks";
+}
+
+function renderNav(){
+  $("steps").innerHTML=STEPS.map((s,i)=>`<li><button type="button" id="nav${i}" data-i="${i}" ${i===S.step?'aria-current="step"':""} class="${i<S.step?"done":""}"><span class="n">${i+1}</span><span><span class="t">${s.t}</span><small>${s.s}</small></span></button></li>`).join("");
+  $("steps").querySelectorAll("button").forEach(b=>b.onclick=()=>{S.step=+b.dataset.i;render()});
+}
+
+function stepSteer(){
+  const retention=/retain|retention|churn/i.test(S.goal);
+  const ns=retention?"Weekly active inboxes that keep ≥80% of drafts":"Drafts sent with light edits, per active inbox per week";
+  return `
+  <div><h2>Steer: the AI CPO turns a business goal into a north star</h2>
+  <p class="lede">Tell it what the company wants this half. It proposes the north star, the metric tree that drives it, and the guardrails the loop must never break.</p></div>
+  <div class="box"><label for="goal"><h3>Business goal</h3></label>
+  <textarea id="goal">${esc(S.goal)}</textarea>
+  <div class="row"><button class="btn ghost" id="reGoal" type="button">Ask the AI CPO again</button></div></div>
+  <div class="grid2">
+   <div class="box ns-card"><h3>Proposed north star</h3><p class="big">${ns}</p>
+   <p style="font-size:14px">Why: revenue follows habit, and habit follows drafts people trust enough to send. Paid conversion is a lagging result of this number, so the loop steers on this and reports conversion alongside it.</p></div>
+   <div class="box"><h3>Guardrails · the loop may not break these</h3>
+   <ul class="clean">
+    <li class="gr"><span class="pill p-bad">hard</span><span>Draft regret rate (sent, then followed by a correction)</span><span class="mono">≤ 4.5%</span></li>
+    <li class="gr"><span class="pill p-bad">hard</span><span>Privacy incidents</span><span class="mono">0</span></li>
+    <li class="gr"><span class="pill p-amber">soft</span><span>Inference cost per active inbox</span><span class="mono">≤ $1.10/wk</span></li>
+    <li class="gr"><span class="pill p-amber">soft</span><span>30-day paid retention</span><span class="mono">≥ 88%</span></li>
+   </ul></div>
+  </div>
+  <div class="box"><h3>Metric tree · where the north star actually moves</h3>
+   <div class="tree"><div class="tree-root">${ns}</div>
+   <div class="tree-kids">
+    <div class="leaf"><b>Activation</b><span>First draft sent within 24h of install</span><span class="mono">58%</span></div>
+    <div class="leaf"><b>Trust</b><span>Drafts sent with light or no edits</span><span class="mono">61%</span></div>
+    <div class="leaf"><b>Habit</b><span>Days per week with a sent draft</span><span class="mono">3.4</span></div>
+    <div class="leaf"><b>Expansion</b><span>Colleagues invited per paid account</span><span class="mono">0.8</span></div>
+   </div></div></div>
+  <div class="row"><button class="btn" id="approve" type="button">${S.approved?"Goals approved · continue to Listen":"Approve goals and start the loop"}</button>
+  <span class="empty">${S.approved?"Approved. You can revisit them any cycle.":"Nothing runs until a person approves the goals."}</span></div>`;
+}
+
+const SIGNALS={
+ users:[
+  {src:"Telemetry",q:"Drafts to first-time contacts get the sign-off and greeting rewritten 38% of the time.",n:"12.4k drafts",d:"Trust"},
+  {src:"Survey",q:"“It writes to my clients like it writes to my team. Too casual for a first email.”",n:"41 of 212",d:"Trust"},
+  {src:"Telemetry",q:"Half of trial users never open the Drafts folder in their first two days.",n:"3.1k trials",d:"Activation"},
+  {src:"Support",q:"“Trial ended before I realised the drafts were already sitting there.”",n:"27 tickets",d:"Activation"},
+  {src:"Telemetry",q:"Scheduling emails are regenerated 2.1× more than any other type.",n:"5.8k drafts",d:"Habit"},
+  {src:"Survey",q:"“I don't send drafts on emails with contracts attached. I can't tell what it read.”",n:"33 of 212",d:"Trust"}
+ ],
+ market:[
+  {src:"Competitor",q:"A built-in mail assistant shipped free tone presets this month.",n:"launch",d:"Trust"},
+  {src:"Competitor",q:"A rival assistant now books meetings end to end from email.",n:"launch",d:"Habit"},
+  {src:"Reviews",q:"Switchers cite “meeting booking” 3× more than “tone” as the reason they left.",n:"96 reviews",d:"Habit"}
+ ]
+};
+function sigRows(list){return list.map(s=>`<div class="sig"><span class="pill ${s.src==="Competitor"||s.src==="Reviews"?"p-amber":"p-ink"}">${s.src}</span><q>${s.q}</q><span class="cnt">${s.n}</span></div>`).join("")}
+function stepListen(){
+  return `
+  <div><h2>Listen and watch: signals from users and the market</h2>
+  <p class="lede">The loop reads product telemetry, writes its own short surveys when a pattern appears, reads support tickets, and tracks competitor launches. Competitor moves only raise a problem's priority when users show the same need.</p></div>
+  <div class="grid2">
+   <div class="box"><h3>Users · this cycle</h3><div>${sigRows(SIGNALS.users)}</div></div>
+   <div class="box"><h3>Market · this cycle</h3><div>${sigRows(SIGNALS.market)}</div>
+   <p class="empty">Ignored: a rival's new theme gallery. No user signal asks for it.</p></div>
+  </div>
+  <div class="box"><h3>Problems, ranked by evidence</h3>
+   <ul class="clean">
+    <li class="gr"><span class="pill p-ink">Trust</span><span>Drafts to new or senior contacts miss the right tone</span><span class="mono">3 sources</span></li>
+    <li class="gr"><span class="pill p-ink">Activation</span><span>Trial users don't discover drafts before the trial ends</span><span class="mono">2 sources</span></li>
+    <li class="gr"><span class="pill p-ink">Habit</span><span>Scheduling replies are weak, and rivals now book meetings</span><span class="mono">3 sources</span></li>
+    <li class="gr"><span class="pill p-ink">Trust</span><span>Users can't see what a draft was based on</span><span class="mono">1 source</span></li>
+   </ul></div>
+  <div class="row"><button class="btn" id="toPrio" type="button">Turn problems into bets</button></div>`;
+}
+
+function stepPrio(){
+  const sorted=[...BETS].sort((a,b)=>score(b)-score(a));
+  return `
+  <div><h2>Prioritise: steepest step per week of work</h2>
+  <p class="lede">Each problem becomes a candidate fix. The score is expected north-star impact, weighted by confidence, divided by time to ship. Confidence updates every cycle from what past tests taught the loop.</p></div>
+  <div class="formula">score = impact (north-star %) × confidence ÷ weeks to ship&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;1 in 5 slots reserved for an exploration bet</div>
+  <div class="tablewrap"><table>
+   <thead><tr><th></th><th>Bet</th><th>Driver</th><th>Kind</th><th class="num">Impact</th><th class="num">Conf.</th><th class="num">Weeks</th><th class="num">Score</th><th>Status</th></tr></thead>
+   <tbody>${sorted.map(b=>{const sh=S.shipped.find(x=>x.id===b.id);return `<tr class="${S.bet===b.id?"sel":""}">
+    <td><input type="radio" name="bet" id="r_${b.id}" value="${b.id}" ${S.bet===b.id?"checked":""} ${sh?"disabled":""} aria-label="Select ${esc(b.name)}"></td>
+    <td><label for="r_${b.id}"><b>${b.name}</b></label>${b.explore?' <span class="pill p-amber">explore</span>':""}<br><span class="empty">${b.fix}</span></td>
+    <td>${b.driver}</td><td><span class="pill ${b.type==="Parity"?"p-mute":b.type==="Defence"?"p-amber":b.type==="Heal"?"p-bad":"p-ink"}">${b.type}</span></td>
+    <td class="num">+${b.impact.toFixed(1)}%</td><td class="num">${b.conf.toFixed(2)}</td><td class="num">${b.weeks}</td><td class="num"><b>${score(b).toFixed(2)}</b></td>
+    <td>${sh?`<span class="pill ${sh.result==="shipped"?"p-good":"p-bad"}">${sh.result}</span>`:'<span class="pill p-mute">ready</span>'}</td></tr>`}).join("")}</tbody>
+  </table></div>
+  <p class="empty">Parity bets score low on purpose. Matching a rival only matters when users are leaving over it.</p>
+  <div class="row"><button class="btn" id="toTest" type="button" ${S.shipped.find(x=>x.id===S.bet)?"disabled":""}>Test the selected bet</button></div>`;
+}
+
+function stepTest(){
+  const b=BETS.find(x=>x.id===S.bet), t=S.test&&S.test.id===b.id?S.test:null;
+  const day=t?t.day:0;
+  const pc=t&&t.nc?t.sc/t.nc:b.base, pv=t&&t.nv?t.sv/t.nv:b.base;
+  let prob=0.5,verdict="";
+  if(t&&t.nc){const se=Math.sqrt(pv*(1-pv)/t.nv+pc*(1-pc)/t.nc);prob=phi((pv-pc)/se)}
+  const regretC=0.041, regretV=0.041+b.regret;
+  if(t&&t.day>=14){
+    if(prob>0.95&&regretV<=0.045) verdict=`<div class="verdict ok"><b>Recommend launch.</b><span>${fmtP(prob)} chance the variant beats control on ${b.metric.toLowerCase()}. Guardrails hold.</span></div>`;
+    else if(prob<0.8) verdict=`<div class="verdict no"><b>Recommend roll back.</b><span>No clear win after 14 days (${fmtP(prob)} chance it beats control). The loop lowers confidence in bets of this kind.</span></div>`;
+    else verdict=`<div class="verdict wait"><b>Promising but not proven.</b><span>${fmtP(prob)} chance it beats control. Ship to 20% and keep measuring, or roll back.</span></div>`;
+  }
+  return `
+  <div><h2>Test: ${esc(b.name)}</h2>
+  <p class="lede">${esc(b.fix)} Primary metric: <b>${b.metric.toLowerCase()}</b>. Half of new traffic sees the change for 14 days.</p></div>
+  <div class="row"><button class="btn" id="run" type="button" ${S.running||day>=14?"disabled":""}>${day>=14?"Test complete":S.running?"Running…":"Run 14-day test"}</button><span class="mono">Day ${day} / 14 · ${t?(t.nc+t.nv).toLocaleString():0} users</span></div>
+  <div class="abwrap">
+   <div class="arm"><h3>Control</h3><span class="mono v">${fmtP(pc)}</span><div class="bar"><i style="width:${(pc*100).toFixed(1)}%"></i></div><span class="empty">${b.metric}</span></div>
+   <div class="arm var"><h3>Variant</h3><span class="mono v">${fmtP(pv)}</span><div class="bar"><i style="width:${(pv*100).toFixed(1)}%"></i></div><span class="empty">${b.metric}</span></div>
+  </div>
+  <div class="box"><h3>Guardrails during the test</h3>
+   <ul class="clean">
+    <li class="gr"><span class="pill ${regretV<=0.045?"p-good":"p-bad"}">${regretV<=0.045?"holding":"breached"}</span><span>Draft regret rate · control ${fmtP(regretC)}, variant ${fmtP(t?regretV:regretC)}</span><span class="mono">≤ 4.5%</span></li>
+    <li class="gr"><span class="pill p-good">holding</span><span>Privacy incidents</span><span class="mono">0</span></li>
+   </ul></div>
+  <div class="prob"><h3>Chance the variant is better</h3><div class="bar"><i style="width:${(prob*100).toFixed(0)}%;background:var(--ink)"></i></div><span class="mono">${t&&t.nc?fmtP(prob):"waiting for data"}</span></div>
+  ${verdict}
+  ${day>=14?'<div class="row"><button class="btn" id="toShip" type="button">Review the decision</button></div>':""}`;
+}
+
+function stepShip(){
+  const b=BETS.find(x=>x.id===S.bet), t=S.test&&S.test.id===b.id&&S.test.day>=14?S.test:null;
+  const decided=S.shipped.find(x=>x.id===b.id);
+  let decide="";
+  if(t&&!decided){
+    const pc=t.sc/t.nc,pv=t.sv/t.nv,se=Math.sqrt(pv*(1-pv)/t.nv+pc*(1-pc)/t.nc),prob=phi((pv-pc)/se);
+    const rec=prob>0.95?"launch":"roll back";
+    decide=`<div class="box"><h3>Decision for ${esc(b.name)}</h3><p>The loop recommends <b>${rec}</b>. Launches change what every user sees, so this stays a human call until this kind of change earns a track record.</p>
+    <div class="row"><button class="btn" id="launch" type="button">Approve launch</button><button class="btn warn" id="rollback" type="button">Roll back</button></div></div>`;
+  } else if(decided){
+    decide=`<div class="verdict ${decided.result==="shipped"?"ok":"no"}"><b>${decided.result==="shipped"?"Launched to everyone.":"Rolled back."}</b><span>${decided.result==="shipped"?`North star moved ${S.ns[S.ns.length-1]>14.2?"up":"down"} to ${S.ns[S.ns.length-1].toFixed(1)}.`:"Nothing changed for users. The learning is kept."}</span></div>
+    <div class="row"><button class="btn" id="next" type="button">Start cycle ${S.cycle+1}</button></div>`;
+  } else {
+    decide=`<p class="empty">No finished test yet. Pick a bet in Prioritise and test it.</p>`;
+  }
+  return `
+  <div><h2>Ship, heal and remember</h2>
+  <p class="lede">Launch or roll back, then write down what was learned so the next cycle starts smarter. The loop also watches live metrics and heals regressions on its own, where it has earned the right to.</p></div>
+  ${decide}
+  <div class="box"><h3>Self-heal</h3>
+   ${S.healed?`<div class="alert"><b>Draft regret up 3.1 pts in German-language inboxes since today's model update</b><span>Likely cause: the new model drops formal address (Sie) in replies. Action taken: rolled the model back for German inboxes only. Reversible, low risk, and inside earned autonomy, so no approval was needed. You were told, not asked.</span><span class="row"><span class="pill p-good">resolved in 22 min</span><span class="pill p-ink">logged to memory</span></span></div>`
+   :`<p class="empty">Live metrics are inside guardrails.</p><div class="row"><button class="btn ghost" id="incident" type="button">Simulate a regression</button></div>`}
+  </div>
+  <div class="grid2">
+   <div class="box"><h3>Autonomy, earned per action</h3>
+   <div class="tablewrap" style="border:0"><table class="ladder" style="min-width:0"><tbody>
+    <tr><td>Roll back a model or flag</td><td>acts, then tells you</td></tr>
+    <tr><td>Write and send a micro-survey</td><td>acts, then tells you</td></tr>
+    <tr><td>Start an A/B test</td><td>asks first</td></tr>
+    <tr><td>Launch to everyone</td><td>asks first</td></tr>
+    <tr><td>Pricing or plan changes</td><td>always asks</td></tr>
+   </tbody></table></div></div>
+   <div class="box"><h3>Memory</h3>${S.log.length?`<ol class="clean log">${S.log.map(l=>`<li><span class="when">${l.when}</span><span>${esc(l.text)}</span></li>`).join("")}</ol>`:'<p class="empty">Nothing learned yet. Finish a test to add the first entry.</p>'}</div>
+  </div>`;
+}
+
+function render(){
+  renderNav();drawNS();
+  const p=$("panel");
+  p.innerHTML=[stepSteer,stepListen,stepPrio,stepTest,stepShip][S.step]();
+  bind();
+}
+function go(i){S.step=i;render();$("nav"+i).focus()}
+function bind(){
+  const g=$("goal"); if(g) g.oninput=()=>{S.goal=g.value};
+  const re=$("reGoal"); if(re) re.onclick=()=>render();
+  const ap=$("approve"); if(ap) ap.onclick=()=>{if(!S.approved){S.approved=true;addLog("Goals approved. Steering on trusted drafts; conversion reported alongside.")}go(1)};
+  const tp=$("toPrio"); if(tp) tp.onclick=()=>go(2);
+  document.querySelectorAll('input[name="bet"]').forEach(r=>r.onchange=()=>{S.bet=r.value;render()});
+  const tt=$("toTest"); if(tt) tt.onclick=()=>go(3);
+  const run=$("run"); if(run) run.onclick=runTest;
+  const ts=$("toShip"); if(ts) ts.onclick=()=>go(4);
+  const la=$("launch"); if(la) la.onclick=()=>decide("shipped");
+  const rb=$("rollback"); if(rb) rb.onclick=()=>decide("rolled back");
+  const nx=$("next"); if(nx) nx.onclick=()=>{S.cycle++;const nxt=[...BETS].sort((a,b)=>score(b)-score(a)).find(b=>!S.shipped.find(x=>x.id===b.id));if(nxt)S.bet=nxt.id;S.test=null;go(2)};
+  const inc=$("incident"); if(inc) inc.onclick=()=>{S.healed=true;addLog("Self-heal: rolled back today's model for German inboxes after draft regret rose 3.1 pts. Add a formal-address check to future model evals.");S.ns.push(+(S.ns[S.ns.length-1]-0.2).toFixed(2));render()};
+}
+function runTest(){
+  const b=BETS.find(x=>x.id===S.bet);
+  const r=rng(b.id.charCodeAt(1)*97+S.cycle);
+  S.test={id:b.id,day:0,nc:0,sc:0,nv:0,sv:0};S.running=true;
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tick=()=>{
+    const n=380;
+    for(const arm of ["c","v"]){const p=arm==="c"?b.base:b.base+b.lift;const s=Math.max(0,Math.round(n*p+gauss(r)*Math.sqrt(n*p*(1-p))));
+      if(arm==="c"){S.test.nc+=n;S.test.sc+=s}else{S.test.nv+=n;S.test.sv+=s}}
+    S.test.day++;
+    if(S.test.day>=14){S.running=false}
+    if(S.step===3)render();
+    if(S.running)setTimeout(tick,reduce?0:180);
+  };
+  render();tick();
+}
+function decide(res){
+  const b=BETS.find(x=>x.id===S.bet),t=S.test;
+  const pc=t.sc/t.nc,pv=t.sv/t.nv,d=pv-pc;
+  S.shipped.push({id:b.id,result:res});
+  if(res==="shipped"){
+    const last=S.ns[S.ns.length-1];const r=rng(S.cycle*13);
+    const gain=b.ns*(d>0?Math.min(1.3,d/Math.max(b.lift,0.001)):0);
+    S.ns.push(+(last+gain*0.5+gauss(r)*0.05).toFixed(2));S.ns.push(+(last+gain+gauss(r)*0.05).toFixed(2));
+    addLog(`${b.name}: shipped. ${b.metric} ${d>=0?"+":""}${(d*100).toFixed(1)} pts. Raise confidence for ${b.driver.toLowerCase()} bets with this pattern.`);
+    BETS.filter(x=>x.driver===b.driver&&!S.shipped.find(s=>s.id===x.id)).forEach(x=>x.conf=Math.min(.9,+(x.conf+.05).toFixed(2)));
+  } else {
+    addLog(`${b.name}: rolled back. ${b.metric} ${d>=0?"+":""}${(d*100).toFixed(1)} pts, not enough to justify it. Lower confidence in ${b.type.toLowerCase()} bets without a user signal.`);
+    BETS.filter(x=>x.type===b.type&&!S.shipped.find(s=>s.id===x.id)).forEach(x=>x.conf=Math.max(.2,+(x.conf-.1).toFixed(2)));
+  }
+  render();
+}
+render();
+})();
+</script>
+
+</body>
+</html>
